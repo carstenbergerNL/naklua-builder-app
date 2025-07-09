@@ -37,7 +37,7 @@ export default function WidgetItem({
         style={{ position: "absolute", top: 4, right: 4 }}
         onClick={(e) => {
           e.stopPropagation();
-          onDelete();
+          onDelete(); // keep this call
         }}
       />
     </div>

@@ -12,6 +12,15 @@ export const getWidgetsByPageId = async (
   return await getData(url, {}, encodedCredential);
 };
 
+export const deleteWidget = async (
+  id: string,
+  encodedCredential?: string
+): Promise<void> => {
+  const url = `${BASE_ENDPOINT}/${id}`;
+  console.info("Deleting widget at URL:", url);
+  await deleteData(url, encodedCredential);
+};
+
 export const saveWidget = async (widget: WidgetInstance): Promise<void> => {
   const dto = {
     parentId: null, // or widget.parentId if you have it
@@ -36,10 +45,7 @@ export const saveWidget = async (widget: WidgetInstance): Promise<void> => {
   }
 };
 
-export const deleteWidget = async (id: string): Promise<void> => {
-  const url = `/widgets/${id}`;
-  await deleteData(url);
-};
+
 
 const widgetExists = async (id: string): Promise<boolean> => {
   try {
