@@ -1,11 +1,7 @@
 import { WidgetInstance } from "../models/WidgetInstance";
 import { Button } from "primereact/button";
 import WidgetRenderer from "./WidgetRenderer";
-import {
-  DndContext,
-  closestCenter,
-  DragEndEvent,
-} from "@dnd-kit/core";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
@@ -20,7 +16,7 @@ interface Props {
   selectedWidgetId: string | null;
   onSelectWidget: (id: string) => void;
   onDeleteWidget: (id: string) => void;
-  onReorder: (widgets: WidgetInstance[]) => void; // ✅ New prop
+  onReorder: (widgets: WidgetInstance[]) => void;
 }
 
 function SortableWidget({
@@ -42,11 +38,9 @@ function SortableWidget({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    border: selected ? "1px solid #2196f3" : "1px solid transparent",
-    padding: 8,
-    marginBottom: 10,
+    border: selected ? "2px solid #2196f3" : "1px solid #e0e0e0",
+    padding: "0.5rem",
     background: "#fff",
-    borderRadius: 4,
     position: "relative",
   };
 
@@ -58,10 +52,10 @@ function SortableWidget({
         {...listeners}
         style={{
           position: "absolute",
-          top: 8,
-          left: 8,
+          top: 10,
+          left: 10,
           cursor: "grab",
-          zIndex: 5,
+          opacity: 0.5,
         }}
         onClick={(e) => e.stopPropagation()}
         title="Drag widget"
@@ -75,15 +69,17 @@ function SortableWidget({
       </div>
 
       {/* Delete Button */}
-      <Button
-        icon="pi pi-trash"
-        className="p-button-rounded p-button-danger p-button-sm"
+      <i
+        className="pi pi-trash"
         style={{
           position: "absolute",
-          top: 8,
+          top: 12,
           right: 8,
-          zIndex: 5,
+          color: "#f44336", // red color
+          fontSize: "1rem",
+          cursor: "pointer",
         }}
+        title="Delete widget"
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
@@ -104,9 +100,9 @@ export default function WidgetCanvas({
     <div
       style={{
         flex: 1,
-        padding: "1rem",
+        padding: "2rem",
         overflowY: "auto",
-        background: "#fcfcfc",
+        background: "#f4f6f8",
       }}
     >
       {widgets.length === 0 ? (

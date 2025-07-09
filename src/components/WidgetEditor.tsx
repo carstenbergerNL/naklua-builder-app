@@ -1,71 +1,105 @@
 import { WidgetInstance } from "../models/WidgetInstance";
-import { InputText } from "primereact/inputtext";
-import { Dropdown } from "primereact/dropdown";
+import { TabView, TabPanel } from "primereact/tabview";
 import { Button } from "primereact/button";
+import { useState } from "react";
 
 interface Props {
   widget: WidgetInstance | null;
   onChange: (key: string, value: any) => void;
   onSave: () => void;
   saving: boolean;
+  onAddWidget: (type: string) => void;
 }
 
-export default function WidgetEditor({ widget, onChange, onSave, saving }: Props) {
-  if (!widget) {
-    return (
-      <div
-        style={{
-          height: "100%",
-          borderLeft: "1px solid #ccc",
-          padding: "2rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#888",
-          fontStyle: "italic",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <i className="pi pi-cog" style={{ fontSize: "2rem", marginBottom: "1rem" }} />
-          <p>No widget selected</p>
-          <p>Select a widget from the canvas</p>
+export default function WidgetEditor({
+  widget,
+  onChange,
+  onSave,
+  saving,
+  onAddWidget,
+}: Props) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const renderProperties = () => {
+    if (!widget) {
+      return (
+        <div style={{ padding: "1rem", color: "#888" }}>
+          Select a widget to edit
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  return (
-    <div style={{ padding: "1.5rem", borderLeft: "1px solid #ccc", height: "100%", overflowY: "auto" }}>
-      <h4 style={{ marginBottom: "1rem" }}>Edit Widget</h4>
+    return (
+      <div style={{ padding: "1rem" }}>
+        {Object.keys(widget.config).map((key) => (
+          <div key={key} style={{ marginBottom: "0.5rem" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.85rem",
+                marginBottom: "0.25rem",
+              }}
+            >
+              {key.charAt(0).toUpperCase() + key.slice(1)}
+            </label>
 
-      <div className="p-field">
-        <label>Text</label>
-        <InputText
-          value={widget.config.text || ""}
-          onChange={(e) => onChange("text", e.target.value)}
-          className="p-inputtext-sm"
+            <input
+              type="text"
+              value={widget.config[key]}
+              onChange={(e) => onChange(key, e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+              }}
+            />
+          </div>
+        ))}
+
+        <Button
+          icon="pi pi-save"
+          onClick={onSave}
+          className="p-button-sm p-button-primary"
+          disabled={saving}
+          loading={saving}
         />
       </div>
+    );
+  };
 
-      {widget.widgetType === "Heading" && (
-        <div className="p-field" style={{ marginTop: "1rem" }}>
-          <label>Size</label>
-          <Dropdown
-            value={widget.config.size}
-            options={["h1", "h2", "h3", "h4", "h5", "h6"]}
-            onChange={(e) => onChange("size", e.value)}
-            placeholder="Select heading level"
-            className="p-dropdown-sm"
-          />
-        </div>
-      )}
-
+  const renderToolbox = () => (
+    <div style={{ padding: "1rem" }}>
       <Button
-        label={saving ? "Saving..." : "Save Widget"}
-        className="p-mt-3 p-button-sm"
-        onClick={onSave}
-        disabled={saving}
+        label="Add Heading"
+        className="p-button-sm p-button-secondary"
+        style={{ marginBottom: "0.5rem", width: "100%" }}
+        onClick={() => onAddWidget("Heading")}
       />
+      <Button
+        label="Add Paragraph"
+        className="p-button-sm p-button-secondary"
+        style={{ width: "100%" }}
+        onClick={() => onAddWidget("Paragraph")}
+      />
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        width: "300px",
+        background: "#f8f9fa",
+        borderLeft: "1px solid #ccc",
+      }}
+    >
+      <TabView
+        activeIndex={activeIndex}
+        onTabChange={(e) => setActiveIndex(e.index)}
+      >
+        <TabPanel header="Properties">{renderProperties()}</TabPanel>
+        <TabPanel header="Toolbox">{renderToolbox()}</TabPanel>
+      </TabView>
     </div>
   );
 }

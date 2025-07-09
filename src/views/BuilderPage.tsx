@@ -120,7 +120,6 @@ export default function BuilderPage() {
           selectedWidgetId={selectedWidgetId}
           onSelectWidget={setSelectedWidgetId}
           onDeleteWidget={handleDeleteWidget}
-          //onReorder={(reordered) => setWidgets(reordered)}
           onReorder={handleReorderWidgets}
         />
 
@@ -129,6 +128,7 @@ export default function BuilderPage() {
           onChange={updateConfig}
           onSave={saveCurrentWidget}
           saving={saving}
+          onAddWidget={addWidget} // ← ✅ Add this line
         />
       </div>
     </div>
