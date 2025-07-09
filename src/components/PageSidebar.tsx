@@ -40,8 +40,7 @@ export default function PageSidebar({
       style={{
         width: 260,
         height: "100%",
-        backgroundColor: "#f4f5f7",
-        borderRight: "1px solid #ddd",
+        backgroundColor: "#ffffff",
         display: "flex",
         flexDirection: "column",
       }}

@@ -100,7 +100,6 @@ export default function WidgetCanvas({
     <div
       style={{
         flex: 1,
-        padding: "2rem",
         overflowY: "auto",
         background: "#f4f6f8",
       }}
