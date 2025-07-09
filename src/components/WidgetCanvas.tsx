@@ -1,7 +1,11 @@
 import { WidgetInstance } from "../models/WidgetInstance";
 import { Button } from "primereact/button";
 import WidgetRenderer from "./WidgetRenderer";
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+} from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
@@ -9,12 +13,14 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 
 interface Props {
   widgets: WidgetInstance[];
   selectedWidgetId: string | null;
   onSelectWidget: (id: string) => void;
   onDeleteWidget: (id: string) => void;
+  onReorder: (widgets: WidgetInstance[]) => void; // ✅ New prop
 }
 
 function SortableWidget({
@@ -45,18 +51,30 @@ function SortableWidget({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      {/* Click area for drag and selection */}
+    <div ref={setNodeRef} style={style} onClick={onSelect}>
+      {/* Drag Handle */}
       <div
         {...attributes}
         {...listeners}
-        onClick={onSelect}
-        style={{ cursor: "pointer", paddingRight: "2.5rem" }}
+        style={{
+          position: "absolute",
+          top: 8,
+          left: 8,
+          cursor: "grab",
+          zIndex: 5,
+        }}
+        onClick={(e) => e.stopPropagation()}
+        title="Drag widget"
       >
+        <GripVertical size={16} />
+      </div>
+
+      {/* Widget Content */}
+      <div style={{ paddingLeft: "1.5rem" }}>
         <WidgetRenderer widget={widget} />
       </div>
 
-      {/* Absolute positioned delete button, outside drag zone */}
+      {/* Delete Button */}
       <Button
         icon="pi pi-trash"
         className="p-button-rounded p-button-danger p-button-sm"
@@ -64,10 +82,10 @@ function SortableWidget({
           position: "absolute",
           top: 8,
           right: 8,
-          zIndex: 10,
+          zIndex: 5,
         }}
         onClick={(e) => {
-          e.stopPropagation(); // prevent selecting
+          e.stopPropagation();
           onDelete();
         }}
       />
@@ -75,13 +93,12 @@ function SortableWidget({
   );
 }
 
-
-
 export default function WidgetCanvas({
   widgets,
   selectedWidgetId,
   onSelectWidget,
   onDeleteWidget,
+  onReorder, // ✅ Receive prop
 }: Props) {
   return (
     <div
@@ -92,8 +109,6 @@ export default function WidgetCanvas({
         background: "#fcfcfc",
       }}
     >
-      <h3 style={{ fontSize: "1rem", marginBottom: "1rem" }}>Canvas</h3>
-
       {widgets.length === 0 ? (
         <div
           style={{
@@ -120,13 +135,9 @@ export default function WidgetCanvas({
 
             if (oldIndex !== -1 && newIndex !== -1) {
               const updated = arrayMove(widgets, oldIndex, newIndex).map(
-                (w, i) => ({
-                  ...w,
-                  orderIndex: i,
-                })
+                (w, i) => ({ ...w, orderIndex: i })
               );
-              // TODO: save updated order to server
-              console.log("New order:", updated);
+              onReorder(updated); // ✅ update parent state
             }
           }}
         >
@@ -140,10 +151,7 @@ export default function WidgetCanvas({
                 widget={widget}
                 selected={selectedWidgetId === widget.id}
                 onSelect={() => onSelectWidget(widget.id)}
-                onDelete={() => {
-                  console.log("Deleting widget", widget.id); // 👈 Log here
-                  onDeleteWidget(widget.id);
-                }}
+                onDelete={() => onDeleteWidget(widget.id)}
               />
             ))}
           </SortableContext>

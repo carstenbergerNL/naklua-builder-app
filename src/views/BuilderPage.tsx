@@ -76,7 +76,6 @@ export default function BuilderPage() {
   };
 
   const handleDeleteWidget = async (id: string) => {
-
     console.log("handleDeleteWidget:", id);
 
     if (selectedWidgetId === id) setSelectedWidgetId(null);
@@ -87,6 +86,19 @@ export default function BuilderPage() {
       setWidgets(updated);
     } catch (err) {
       console.error("Failed to delete widget:", err);
+    }
+  };
+
+  const handleReorderWidgets = async (reordered: WidgetInstance[]) => {
+    setWidgets(reordered);
+
+    // Save each updated widget (with new orderIndex) to the backend
+    for (const widget of reordered) {
+      try {
+        await saveWidget(widget); // assuming saveWidget already updates by ID
+      } catch (error) {
+        console.error("Failed to save widget order:", error);
+      }
     }
   };
 
@@ -108,6 +120,8 @@ export default function BuilderPage() {
           selectedWidgetId={selectedWidgetId}
           onSelectWidget={setSelectedWidgetId}
           onDeleteWidget={handleDeleteWidget}
+          //onReorder={(reordered) => setWidgets(reordered)}
+          onReorder={handleReorderWidgets}
         />
 
         <WidgetEditor
