@@ -1,4 +1,7 @@
 import { WidgetInstance } from "../models/WidgetInstance";
+import HeadingWidget from "./widgets/HeadingWidget/HeadingWidget";
+import LinkWidget from "./widgets/LinkWidget/LinkWidget";
+import ParagraphWidget from "./widgets/ParagraphWidget/ParagraphWidget";
 
 interface Props {
   widget: WidgetInstance;
@@ -11,11 +14,11 @@ export default function WidgetRenderer({ widget }: Props) {
 
   switch (widgetType) {
     case "Heading":
-      const HeadingTag = config.size || "h2";
-      return <HeadingTag>{config.text || "Untitled"}</HeadingTag>;
-
+      return <HeadingWidget config={config} />;
     case "Paragraph":
-      return <p>{config.text || "..."}</p>;
+      return <ParagraphWidget config={config} />;
+    case "Link":
+      return <LinkWidget config={config} />;
 
     default:
       return <div style={{ background: "#ffe0e0", padding: 8 }}>

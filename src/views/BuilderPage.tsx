@@ -128,7 +128,7 @@ export default function BuilderPage() {
           onChange={updateConfig}
           onSave={saveCurrentWidget}
           saving={saving}
-          onAddWidget={addWidget} // ← ✅ Add this line
+          onAddWidget={addWidget}
         />
       </div>
     </div>
