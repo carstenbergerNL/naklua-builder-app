@@ -11,6 +11,7 @@ import WidgetCanvas from "../components/WidgetCanvas";
 import WidgetEditor from "../components/WidgetEditor";
 import PageSidebar from "../components/PageSidebar";
 import Topbar from "../components/Topbar";
+import { getWidgetDefinitionByType } from "../services/widgetDefinitionsService";
 
 export default function BuilderPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -35,24 +36,28 @@ export default function BuilderPage() {
   const addWidget = async (type: string) => {
     if (!selectedPageId) return;
 
-    const tempWidget: WidgetInstance = {
-      id: crypto.randomUUID(),
-      pageId: selectedPageId,
-      widgetType: type,
-      label: "",
-      config:
-        type === "Heading"
-          ? { text: "New Heading", size: "h2" }
-          : { text: "New paragraph content..." },
-      isVisible: true,
-      isPageTitle: false,
-      orderIndex: widgets.length,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const def = await getWidgetDefinitionByType(type);
+      const defaultConfig = def.defaultConfig ? JSON.parse(def.defaultConfig) : {};
 
-    await saveWidget(tempWidget);
-    const updated = await getWidgetsByPageId(selectedPageId);
-    setWidgets(updated);
+      const tempWidget: WidgetInstance = {
+        id: crypto.randomUUID(),
+        pageId: selectedPageId,
+        widgetType: type,
+        label: def.displayName || type,
+        config: defaultConfig,
+        isVisible: true,
+        isPageTitle: false,
+        orderIndex: widgets.length,
+        createdAt: new Date().toISOString(),
+      };
+
+      await saveWidget(tempWidget);
+      const updated = await getWidgetsByPageId(selectedPageId);
+      setWidgets(updated);
+    } catch (err) {
+      console.error("Failed to add widget:", err);
+    }
   };
 
   const updateConfig = (key: string, value: any) => {
@@ -76,13 +81,11 @@ export default function BuilderPage() {
   };
 
   const handleDeleteWidget = async (id: string) => {
-    console.log("handleDeleteWidget:", id);
-
     if (selectedWidgetId === id) setSelectedWidgetId(null);
 
     try {
-      await deleteWidget(id); // <- DELETE API call
-      const updated = await getWidgetsByPageId(selectedPageId!); // refresh after deletion
+      await deleteWidget(id);
+      const updated = await getWidgetsByPageId(selectedPageId!);
       setWidgets(updated);
     } catch (err) {
       console.error("Failed to delete widget:", err);
@@ -91,11 +94,9 @@ export default function BuilderPage() {
 
   const handleReorderWidgets = async (reordered: WidgetInstance[]) => {
     setWidgets(reordered);
-
-    // Save each updated widget (with new orderIndex) to the backend
     for (const widget of reordered) {
       try {
-        await saveWidget(widget); // assuming saveWidget already updates by ID
+        await saveWidget(widget);
       } catch (error) {
         console.error("Failed to save widget order:", error);
       }
