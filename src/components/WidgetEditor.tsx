@@ -100,22 +100,34 @@ export default function WidgetEditor({
   const renderToolbox = () => (
     <div style={{ padding: "1rem" }}>
       <Button
-        label="Add Heading"
+        label="Heading"
         className="p-button-sm p-button-secondary"
         style={{ marginBottom: "0.5rem", width: "100%" }}
         onClick={() => onAddWidget("Heading")}
       />
       <Button
-        label="Add Paragraph"
+        label="Paragraph"
         className="p-button-sm p-button-secondary"
         style={{ marginBottom: "0.5rem", width: "100%" }}
         onClick={() => onAddWidget("Paragraph")}
       />
       <Button
-        label="Add Link"
+        label="Link"
         className="p-button-sm p-button-secondary"
         style={{ marginBottom: "0.5rem", width: "100%" }}
         onClick={() => onAddWidget("Link")}
+      />
+      <Button
+        label="Image"
+        className="p-button-sm p-button-secondary"
+        style={{ marginBottom: "0.5rem", width: "100%" }}
+        onClick={() => onAddWidget("Image")}
+      />
+      <Button
+        label="Divider"
+        className="p-button-sm p-button-secondary"
+        style={{ marginBottom: "0.5rem", width: "100%" }}
+        onClick={() => onAddWidget("Divider")}
       />
     </div>
   );

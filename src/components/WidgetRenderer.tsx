@@ -1,5 +1,7 @@
 import { WidgetInstance } from "../models/WidgetInstance";
+import DividerWidget from "./widgets/DividerWidget/DividerWidget";
 import HeadingWidget from "./widgets/HeadingWidget/HeadingWidget";
+import ImageWidget from "./widgets/ImageWidget/ImageWidget";
 import LinkWidget from "./widgets/LinkWidget/LinkWidget";
 import ParagraphWidget from "./widgets/ParagraphWidget/ParagraphWidget";
 
@@ -19,7 +21,10 @@ export default function WidgetRenderer({ widget }: Props) {
       return <ParagraphWidget config={config} />;
     case "Link":
       return <LinkWidget config={config} />;
-
+    case "Image":
+      return <ImageWidget config={config} />;
+    case "Divider":
+      return <DividerWidget config={config} />;
     default:
       return <div style={{ background: "#ffe0e0", padding: 8 }}>
         Unknown widget type: <strong>{widgetType}</strong>
