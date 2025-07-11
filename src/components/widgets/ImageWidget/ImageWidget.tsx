@@ -1,4 +1,11 @@
-export default function ImageWidget({ config }: { config: any }) {
+import { useRef } from "react";
+
+interface Props {
+  config: any;
+  onConfigChange?: (key: string, value: any) => void;
+}
+
+export default function ImageWidget({ config }: Props) {
   return (
     <img
       src={config.src}

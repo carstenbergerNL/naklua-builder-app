@@ -1,7 +1,5 @@
-import { Tree } from "primereact/tree";
-import { Divider } from "primereact/divider";
 import { Page } from "../models/Page";
-import { Panel } from "primereact/panel";
+import { MdInsertDriveFile } from "react-icons/md";
 
 interface Props {
   pages: Page[];
@@ -15,43 +13,37 @@ export default function PageSidebar({
   selectedPageId,
   onSelectPage,
 }: Props) {
-  const treeNodes = [
-    {
-      key: "pages",
-      label: "Pages",
-      children: pages.map((page) => ({
-        key: page.id,
-        label: page.name,
-        selectable: true,
-        className: selectedPageId === page.id ? "p-highlight" : "",
-      })),
-    },
-  ];
-
-  const handleSelect = (e: any) => {
-    const selectedKey = e.value;
-    if (selectedKey && selectedKey !== "pages") {
-      onSelectPage(selectedKey);
-    }
-  };
-
   return (
-    <div
-      style={{
-        width: 260,
-        height: "100%",
-        backgroundColor: "#ffffff",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Tree
-        value={treeNodes}
-        selectionMode="single"
-        selectionKeys={selectedPageId}
-        onSelectionChange={handleSelect}
-        className="p-tree-sm custom-tree"
-      />
+    <div className="app-sidebar" style={{ padding: "1rem 0.5rem" }}>
+      <div style={{ fontWeight: 600, fontSize: "1.05rem", marginBottom: 12, paddingLeft: 8 }}>
+        Pages
+      </div>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {pages.map((page) => (
+          <li
+            key={page.id}
+            onClick={() => onSelectPage(page.id)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "0.45rem 0.75rem",
+              borderRadius: 7,
+              marginBottom: 2,
+              cursor: "pointer",
+              background: selectedPageId === page.id ? "#e0e7ff" : undefined,
+              color: selectedPageId === page.id ? "#2563eb" : undefined,
+              fontWeight: selectedPageId === page.id ? 600 : 400,
+              transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            <span style={{ fontSize: 18, opacity: 0.8 }}>📄</span>
+            <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {page.name}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

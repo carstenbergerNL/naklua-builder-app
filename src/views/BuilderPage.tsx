@@ -104,6 +104,7 @@ export default function BuilderPage() {
   };
 
   const selectedWidget = widgets.find((w) => w.id === selectedWidgetId);
+  const currentPage = pages.find((p) => p.id === selectedPageId);
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -115,22 +116,41 @@ export default function BuilderPage() {
           onSelectPage={handleSelectPage}
           onAddWidget={addWidget}
         />
-
-        <WidgetCanvas
-          widgets={widgets}
-          selectedWidgetId={selectedWidgetId}
-          onSelectWidget={setSelectedWidgetId}
-          onDeleteWidget={handleDeleteWidget}
-          onReorder={handleReorderWidgets}
-        />
-
-        <WidgetEditor
-          widget={selectedWidget || null}
-          onChange={updateConfig}
-          onSave={saveCurrentWidget}
-          saving={saving}
-          onAddWidget={addWidget}
-        />
+        {/* Main content and right sidebar */}
+        <div style={{ flex: 1, display: "flex", minWidth: 0 }}>
+          {/* Main content column */}
+          <div
+            style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
+            onClick={e => {
+              // Only trigger if clicking the background, not a widget
+              if (e.target === e.currentTarget) {
+                setSelectedWidgetId(null);
+              }
+            }}
+          >
+            <div className="info-bar">Editing page: <b>{currentPage ? currentPage.name : "(no page selected)"}</b></div>
+            <WidgetCanvas
+              widgets={widgets}
+              selectedWidgetId={selectedWidgetId}
+              onSelectWidget={setSelectedWidgetId}
+              onDeleteWidget={handleDeleteWidget}
+              onReorder={handleReorderWidgets}
+              pageName={currentPage ? currentPage.name : ""}
+            />
+          </div>
+          {/* Right sidebar */}
+          <WidgetEditor
+            widget={selectedWidget || null}
+            onChange={updateConfig}
+            onSave={saveCurrentWidget}
+            saving={saving}
+            onAddWidget={addWidget}
+            pages={pages}
+            onSelectPage={handleSelectPage}
+            selectedPageId={selectedPageId}
+            selectedPage={currentPage}
+          />
+        </div>
       </div>
     </div>
   );

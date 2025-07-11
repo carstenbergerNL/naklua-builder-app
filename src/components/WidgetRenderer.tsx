@@ -7,22 +7,23 @@ import ParagraphWidget from "./widgets/ParagraphWidget/ParagraphWidget";
 
 interface Props {
   widget: WidgetInstance;
+  onConfigChange?: (key: string, value: any) => void;
 }
 
-export default function WidgetRenderer({ widget }: Props) {
+export default function WidgetRenderer({ widget, onConfigChange }: Props) {
   if (!widget.isVisible) return null;
 
   const { widgetType, config } = widget;
 
   switch (widgetType) {
     case "Heading":
-      return <HeadingWidget config={config} />;
+      return <HeadingWidget config={config} onConfigChange={onConfigChange} />;
     case "Paragraph":
-      return <ParagraphWidget config={config} />;
+      return <ParagraphWidget config={config} onConfigChange={onConfigChange} />;
     case "Link":
       return <LinkWidget config={config} />;
     case "Image":
-      return <ImageWidget config={config} />;
+      return <ImageWidget config={config} onConfigChange={onConfigChange} />;
     case "Divider":
       return <DividerWidget config={config} />;
     default:

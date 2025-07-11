@@ -31,16 +31,11 @@ export default function Topbar() {
   const start = <span className="text-xl font-bold px-3">Naklua Builder 1.0</span>;
 
   return (
-    <Menubar
-      model={items}
-      start={start}
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-        borderBottom: "1px solid #ccc",
-        borderRadius: 0,
-      }}
-    />
+    <div className="app-topbar">
+      <Menubar
+        model={items}
+        start={start}
+      />
+    </div>
   );
 }

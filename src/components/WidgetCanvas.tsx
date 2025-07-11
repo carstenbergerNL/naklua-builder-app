@@ -17,6 +17,7 @@ interface Props {
   onSelectWidget: (id: string) => void;
   onDeleteWidget: (id: string) => void;
   onReorder: (widgets: WidgetInstance[]) => void;
+  pageName: string;
 }
 
 function SortableWidget({
@@ -24,11 +25,13 @@ function SortableWidget({
   selected,
   onSelect,
   onDelete,
+  onConfigChange,
 }: {
   widget: WidgetInstance;
   selected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onConfigChange: (key: string, value: any) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
@@ -45,7 +48,7 @@ function SortableWidget({
   };
 
   return (
-    <div ref={setNodeRef} style={style} onClick={onSelect}>
+    <div ref={setNodeRef} className="widget-item-container" style={style} onClick={onSelect}>
       {/* Drag Handle */}
       <div
         {...attributes}
@@ -65,26 +68,20 @@ function SortableWidget({
 
       {/* Widget Content */}
       <div style={{ paddingLeft: "1.5rem" }}>
-        <WidgetRenderer widget={widget} />
+        <WidgetRenderer widget={widget} onConfigChange={(key, value) => onConfigChange(key, value)} />
       </div>
 
-      {/* Delete Button */}
-      <i
-        className="pi pi-trash"
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 8,
-          color: "#f44336", // red color
-          fontSize: "1rem",
-          cursor: "pointer",
-        }}
+      {/* Mendix-style Delete Button */}
+      <button
+        className="widget-delete-btn"
         title="Delete widget"
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
-      />
+      >
+        <span className="pi pi-trash" />
+      </button>
     </div>
   );
 }
@@ -94,16 +91,19 @@ export default function WidgetCanvas({
   selectedWidgetId,
   onSelectWidget,
   onDeleteWidget,
-  onReorder, // ✅ Receive prop
+  onReorder,
+  pageName,
 }: Props) {
+  const handleWidgetConfigChange = (widgetId: string, key: string, value: any) => {
+    onReorder(
+      widgets.map(w =>
+        w.id === widgetId ? { ...w, config: { ...w.config, [key]: value } } : w
+      )
+    );
+  };
   return (
-    <div
-      style={{
-        flex: 1,
-        overflowY: "auto",
-        background: "#f4f6f8",
-      }}
-    >
+    <div className="app-canvas">
+      {/* Info bar will be rendered in BuilderPage, not here */}
       {widgets.length === 0 ? (
         <div
           style={{
@@ -147,6 +147,7 @@ export default function WidgetCanvas({
                 selected={selectedWidgetId === widget.id}
                 onSelect={() => onSelectWidget(widget.id)}
                 onDelete={() => onDeleteWidget(widget.id)}
+                onConfigChange={(key, value) => handleWidgetConfigChange(widget.id, key, value)}
               />
             ))}
           </SortableContext>
