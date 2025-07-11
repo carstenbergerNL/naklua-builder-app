@@ -3,8 +3,11 @@ import { TabView, TabPanel } from "primereact/tabview";
 import { Button } from "primereact/button";
 import { useEffect, useState, useRef } from "react";
 import { getWidgetDefinitionByType } from "../services/widgetDefinitionsService";
+import { WidgetDefinition } from "../models/WidgetDefinition";
 import { Page } from "../models/Page";
 import { Tooltip } from "primereact/tooltip";
+import { Tooltip as PrimeTooltip } from 'primereact/tooltip';
+import React from 'react';
 
 interface Props {
   widget: WidgetInstance | null;
@@ -12,6 +15,7 @@ interface Props {
   onSave: () => void;
   saving: boolean;
   onAddWidget: (type: string) => void;
+  availableWidgets: WidgetDefinition[];
   pages?: Page[];
   onSelectPage?: (id: string) => void;
   selectedPageId?: string | null;
@@ -34,6 +38,7 @@ export default function WidgetEditor({
   onSave,
   saving,
   onAddWidget,
+  availableWidgets,
   pages,
   onSelectPage,
   selectedPageId,
@@ -224,44 +229,60 @@ export default function WidgetEditor({
     );
   };
 
-  const TOOLBOX_WIDGETS = [
-    { type: "Heading", icon: null, label: "Heading" },
-    { type: "Paragraph", icon: "pi pi-align-left", label: "Paragraph" },
-    { type: "Link", icon: "pi pi-link", label: "Link" },
-    { type: "Image", icon: "pi pi-image", label: "Image" },
-    { type: "Divider", icon: "pi pi-minus", label: "Divider" },
-  ];
+  function renderToolbox() {
+    // Group widgets by category
+    const groups: { [category: string]: WidgetDefinition[] } = {};
+    for (const w of availableWidgets) {
+      const cat = w.category || 'Other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(w);
+    }
+    // Generate unique ids for tooltips
+    const getTooltipId = (widgetType: string) => `toolbox-tooltip-${widgetType}`;
+    return (
+      <div className="toolbox">
+        {Object.entries(groups).map(([category, widgets]) => (
+          <div key={category} style={{ width: '100%' }}>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0 0.25rem 0.25rem', color: '#444' }}>{category}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {widgets.map((w) => {
+                const tooltipId = getTooltipId(w.widgetType);
+                return (
+                  <React.Fragment key={w.widgetType}>
+                    <div
+                      id={tooltipId}
+                      className="toolbox-item"
+                      onClick={() => {
+                        onAddWidget(w.widgetType);
+                      }}
+                      style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', display: 'flex' }}
+                    >
+                      {renderWidgetIcon(w)}
+                    </div>
+                    <PrimeTooltip target={`#${tooltipId}`} content={w.displayName} position="top" />
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-  const renderToolbox = () => (
-    <div className="toolbox">
-      <Tooltip target='.toolbox-item' />
-      {TOOLBOX_WIDGETS.map((w) => (
-        <div
-          key={w.type}
-          className="toolbox-item"
-          data-pr-tooltip={w.label}
-          data-pr-position="top"
-          onClick={() => {
-            onAddWidget(w.type);
-            // setActiveIndex(0); // Remove this line
-          }}
-          style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', display: 'flex' }}
-        >
-          {w.type === "Heading" ? (
-            <span className="toolbox-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="4" width="18" height="3" rx="1.5" fill="#2563eb"/>
-                <rect x="3" y="10" width="12" height="2.5" rx="1.25" fill="#2563eb"/>
-                <rect x="3" y="16" width="8" height="2.5" rx="1.25" fill="#2563eb"/>
-              </svg>
-            </span>
-          ) : (
-            <span className={`toolbox-icon ${w.icon}`} />
-          )}
-        </div>
-      ))}
-    </div>
-  );
+  // Helper to render the correct icon
+  function renderWidgetIcon(w: WidgetDefinition) {
+    // If iconType is 'material-outlined', use Material Icons Outlined
+    if (w.iconType === 'material-outlined' && w.icon) {
+      return <span className="material-icons-outlined" style={{ fontSize: '1rem' }}>{w.icon}</span>;
+    }
+    // If iconType is 'material', use Material Icons
+    if (w.iconType === 'material' && w.icon) {
+      return <span className="material-icons" style={{ fontSize: '1rem' }}>{w.icon}</span>;
+    }
+    // Otherwise, use class-based icon (PrimeIcons, etc.)
+    return <span className={`toolbox-icon ${w.icon ? w.icon : 'pi pi-plus'}`} style={{ fontSize: '1rem' }} />;
+  }
 
   return (
     <div className="app-widget-editor">

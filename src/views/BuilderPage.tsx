@@ -24,6 +24,7 @@ export default function BuilderPage() {
   const [saving, setSaving] = useState<boolean>(false);
   const [availableWidgets, setAvailableWidgets] = useState<WidgetDefinition[]>([]);
   const [activePropertiesTab, setActivePropertiesTab] = useState(0);
+  const dragging = useRef(false);
 
   const appInstanceId = "238AD08C-3F96-4F94-993B-20546C0C6F11";
 
@@ -44,7 +45,7 @@ export default function BuilderPage() {
     if (!selectedPageId) return;
 
     try {
-      const def = await getWidgetDefinitions().then(defs => defs.find(d => d.widgetType === type));
+      const def = availableWidgets.find(d => d.widgetType === type);
       const defaultConfig = def?.defaultConfig ? JSON.parse(def.defaultConfig) : {};
 
       const tempWidget: WidgetInstance = {
@@ -164,6 +165,7 @@ export default function BuilderPage() {
             onSave={saveCurrentWidget}
             saving={saving}
             onAddWidget={addWidget}
+            availableWidgets={availableWidgets}
             pages={pages}
             onSelectPage={handleSelectPage}
             selectedPageId={selectedPageId}
