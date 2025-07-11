@@ -1,21 +1,28 @@
 import { Menubar } from "primereact/menubar";
+import { WidgetDefinition } from "../models/WidgetDefinition";
 
-export default function Topbar() {
+interface TopbarProps {
+  availableWidgets: WidgetDefinition[];
+  onAddWidget: (type: string) => void;
+}
+
+export default function Topbar({ availableWidgets = [], onAddWidget }: TopbarProps) {
   const items = [
     {
-      label: "File",
+      label: "Pages",
       icon: "pi pi-folder",
-      items: [
-        { label: "New Page", icon: "pi pi-plus" },
-        { label: "Save All", icon: "pi pi-save" },
-      ],
+      // No 'New Page' item here
     },
     {
-      label: "Edit",
-      icon: "pi pi-pencil",
+      label: "Widgets",
+      icon: "pi pi-folder",
       items: [
-        { label: "Undo", icon: "pi pi-undo" },
-        { label: "Redo", icon: "pi pi-redo" },
+        { label: "New Widget", icon: "pi pi-plus" },
+        ...availableWidgets.map(w => ({
+          label: w.displayName,
+          icon: "pi pi-plus",
+          command: () => onAddWidget(w.widgetType)
+        }))
       ],
     },
     {

@@ -24,7 +24,7 @@ body {
 .app-topbar {
   background: var(--color-topbar);
   box-shadow: var(--shadow);
-  padding: 0 2rem;
+  padding-right: 2rem;
   height: 56px;
   display: flex;
   align-items: center;
@@ -205,4 +205,11 @@ body {
 }
 .p-tabview-nav-link {
   font-size: 0.93rem;
+}
+
+.p-menubar {
+  font-size: 0.85rem;
+}
+.p-menuitem-text {
+  font-size: 0.85rem;
 } 

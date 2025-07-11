@@ -9,9 +9,12 @@ import { Page } from "../models/Page";
 import { WidgetInstance } from "../models/WidgetInstance";
 import WidgetCanvas from "../components/WidgetCanvas";
 import WidgetEditor from "../components/WidgetEditor";
-import PageSidebar from "../components/PageSidebar";
+import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-import { getWidgetDefinitionByType } from "../services/widgetDefinitionsService";
+import { getWidgetDefinitions } from "../services/widgetDefinitionsService";
+import { WidgetDefinition } from "../models/WidgetDefinition";
+import { useRef } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function BuilderPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -19,11 +22,14 @@ export default function BuilderPage() {
   const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
+  const [availableWidgets, setAvailableWidgets] = useState<WidgetDefinition[]>([]);
+  const [activePropertiesTab, setActivePropertiesTab] = useState(0);
 
   const appInstanceId = "238AD08C-3F96-4F94-993B-20546C0C6F11";
 
   useEffect(() => {
     getPages(appInstanceId).then(setPages);
+    getWidgetDefinitions().then(setAvailableWidgets);
   }, []);
 
   const handleSelectPage = async (id: string) => {
@@ -31,20 +37,21 @@ export default function BuilderPage() {
     const data = await getWidgetsByPageId(id);
     setWidgets(data);
     setSelectedWidgetId(null);
+    setActivePropertiesTab(0); // Switch to Properties tab
   };
 
   const addWidget = async (type: string) => {
     if (!selectedPageId) return;
 
     try {
-      const def = await getWidgetDefinitionByType(type);
-      const defaultConfig = def.defaultConfig ? JSON.parse(def.defaultConfig) : {};
+      const def = await getWidgetDefinitions().then(defs => defs.find(d => d.widgetType === type));
+      const defaultConfig = def?.defaultConfig ? JSON.parse(def.defaultConfig) : {};
 
       const tempWidget: WidgetInstance = {
         id: crypto.randomUUID(),
         pageId: selectedPageId,
         widgetType: type,
-        label: def.displayName || type,
+        label: def?.displayName || type,
         config: defaultConfig,
         isVisible: true,
         isPageTitle: false,
@@ -55,6 +62,16 @@ export default function BuilderPage() {
       await saveWidget(tempWidget);
       const updated = await getWidgetsByPageId(selectedPageId);
       setWidgets(updated);
+      // Find the new widget by orderIndex and type
+      const newWidget = updated.find(
+        w => w.orderIndex === widgets.length && w.widgetType === type
+      );
+      if (newWidget) {
+        setSelectedWidgetId(newWidget.id);
+      } else {
+        setSelectedWidgetId(updated[updated.length - 1]?.id || null);
+      }
+      setActivePropertiesTab(0); // Switch to Properties tab
     } catch (err) {
       console.error("Failed to add widget:", err);
     }
@@ -108,9 +125,9 @@ export default function BuilderPage() {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      <Topbar />
+      <Topbar availableWidgets={availableWidgets} onAddWidget={addWidget} />
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <PageSidebar
+        <Sidebar
           pages={pages}
           selectedPageId={selectedPageId}
           onSelectPage={handleSelectPage}
@@ -122,9 +139,9 @@ export default function BuilderPage() {
           <div
             style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
             onClick={e => {
-              // Only trigger if clicking the background, not a widget
               if (e.target === e.currentTarget) {
                 setSelectedWidgetId(null);
+                setActivePropertiesTab(0);
               }
             }}
           >
@@ -132,13 +149,15 @@ export default function BuilderPage() {
             <WidgetCanvas
               widgets={widgets}
               selectedWidgetId={selectedWidgetId}
-              onSelectWidget={setSelectedWidgetId}
+              onSelectWidget={id => {
+                setSelectedWidgetId(id);
+                setActivePropertiesTab(0);
+              }}
               onDeleteWidget={handleDeleteWidget}
               onReorder={handleReorderWidgets}
               pageName={currentPage ? currentPage.name : ""}
             />
           </div>
-          {/* Right sidebar */}
           <WidgetEditor
             widget={selectedWidget || null}
             onChange={updateConfig}
@@ -149,6 +168,8 @@ export default function BuilderPage() {
             onSelectPage={handleSelectPage}
             selectedPageId={selectedPageId}
             selectedPage={currentPage}
+            activeIndex={activePropertiesTab}
+            setActiveIndex={setActivePropertiesTab}
           />
         </div>
       </div>

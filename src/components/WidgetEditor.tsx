@@ -4,6 +4,7 @@ import { Button } from "primereact/button";
 import { useEffect, useState, useRef } from "react";
 import { getWidgetDefinitionByType } from "../services/widgetDefinitionsService";
 import { Page } from "../models/Page";
+import { Tooltip } from "primereact/tooltip";
 
 interface Props {
   widget: WidgetInstance | null;
@@ -17,6 +18,8 @@ interface Props {
   selectedPage?: Page | null;
   onPagePropertyChange?: (key: string, value: any) => void;
   onSavePageProperties?: () => void;
+  activeIndex: number;
+  setActiveIndex: (index: number) => void;
 }
 
 interface WidgetDefinitionField {
@@ -37,8 +40,9 @@ export default function WidgetEditor({
   selectedPage,
   onPagePropertyChange,
   onSavePageProperties,
+  activeIndex,
+  setActiveIndex,
 }: Props) {
-  const [activeIndex, setActiveIndex] = useState(0);
   const [definitionFields, setDefinitionFields] = useState<WidgetDefinitionField[]>([]);
 
   // Move hook and handler to top level
@@ -230,12 +234,18 @@ export default function WidgetEditor({
 
   const renderToolbox = () => (
     <div className="toolbox">
+      <Tooltip target='.toolbox-item' />
       {TOOLBOX_WIDGETS.map((w) => (
         <div
           key={w.type}
           className="toolbox-item"
-          title={w.label}
-          onClick={() => onAddWidget(w.type)}
+          data-pr-tooltip={w.label}
+          data-pr-position="top"
+          onClick={() => {
+            onAddWidget(w.type);
+            // setActiveIndex(0); // Remove this line
+          }}
+          style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', display: 'flex' }}
         >
           {w.type === "Heading" ? (
             <span className="toolbox-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -248,7 +258,6 @@ export default function WidgetEditor({
           ) : (
             <span className={`toolbox-icon ${w.icon}`} />
           )}
-          <span className="toolbox-label">{w.label}</span>
         </div>
       ))}
     </div>

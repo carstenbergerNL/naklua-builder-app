@@ -1,5 +1,5 @@
 import { Page } from '../models/Page';
-import { getData } from './apiClient';
+import { getData, postData } from './apiClient';
 
 const BASE_ENDPOINT = '/Pages';
 
@@ -8,6 +8,5 @@ export const getPages = async (
   encodedCredential?: string
 ): Promise<Page[]> => {
   const url = `${BASE_ENDPOINT}/App/${id}`;
-
   return await getData(url, {}, encodedCredential);
 };

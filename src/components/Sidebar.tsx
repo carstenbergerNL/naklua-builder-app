@@ -8,7 +8,7 @@ interface Props {
   onAddWidget: (type: string) => void;
 }
 
-export default function PageSidebar({
+export default function Sidebar({
   pages,
   selectedPageId,
   onSelectPage,
@@ -46,4 +46,4 @@ export default function PageSidebar({
       </ul>
     </div>
   );
-}
+} 

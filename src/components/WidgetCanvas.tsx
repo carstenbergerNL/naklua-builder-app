@@ -10,6 +10,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { useState } from "react";
 
 interface Props {
   widgets: WidgetInstance[];
@@ -47,6 +48,8 @@ function SortableWidget({
     position: "relative",
   };
 
+  const [showConfirm, setShowConfirm] = useState(false);
+
   return (
     <div ref={setNodeRef} className="widget-item-container" style={style} onClick={onSelect}>
       {/* Drag Handle */}
@@ -77,11 +80,39 @@ function SortableWidget({
         title="Delete widget"
         onClick={(e) => {
           e.stopPropagation();
-          onDelete();
+          setShowConfirm(true);
         }}
       >
         <span className="pi pi-trash" />
       </button>
+
+      {/* Confirmation Popup */}
+      {showConfirm && (
+        <div style={{
+          position: "absolute",
+          top: 40,
+          right: 8,
+          background: "#fff",
+          border: "1px solid #ccc",
+          borderRadius: 8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+          zIndex: 10,
+          padding: "0.75rem 1rem",
+          minWidth: 180,
+        }}>
+          <div style={{ marginBottom: 10 }}>Delete this widget?</div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              style={{ padding: "0.3em 1em", borderRadius: 4, border: "none", background: "#e0e7ff", color: "#222", cursor: "pointer" }}
+              onClick={e => { e.stopPropagation(); setShowConfirm(false); }}
+            >No</button>
+            <button
+              style={{ padding: "0.3em 1em", borderRadius: 4, border: "none", background: "#f44336", color: "#fff", cursor: "pointer" }}
+              onClick={e => { e.stopPropagation(); setShowConfirm(false); onDelete(); }}
+            >Yes</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
