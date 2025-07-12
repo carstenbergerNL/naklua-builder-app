@@ -15,7 +15,7 @@ export default function Sidebar({
 }: Props) {
   return (
     <div className="app-sidebar" style={{ padding: "1rem 0.5rem" }}>
-      <div style={{ fontWeight: 600, fontSize: "1.05rem", marginBottom: 12, paddingLeft: 8 }}>
+      <div className="toolbox-category-title" style={{ marginBottom: 12, paddingLeft: 8 }}>
         Pages
       </div>
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>

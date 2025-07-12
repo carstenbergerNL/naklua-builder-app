@@ -20,7 +20,7 @@ export default function ContainerWidget({ id, config = {}, children }: Container
       style={{
         padding: 16,
         background: isOver ? '#e0f7fa' : '#f9f9f9',
-        borderRadius: 8,
+        borderRadius: 0,
         outline: isOver ? '2px solid #2196f3' : undefined,
         transition: 'background 0.2s, outline 0.2s',
         ...style

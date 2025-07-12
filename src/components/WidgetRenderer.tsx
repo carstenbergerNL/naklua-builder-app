@@ -12,9 +12,12 @@ interface Props {
   widget: WidgetInstance;
   onConfigChange?: (key: string, value: any) => void;
   renderChildren?: () => React.ReactNode;
+  editing?: boolean;
+  setEditing?: () => void;
+  clearEditing?: () => void;
 }
 
-export default function WidgetRenderer({ widget, onConfigChange }: Props) {
+export default function WidgetRenderer({ widget, onConfigChange, editing, setEditing, clearEditing }: Props) {
   if (!widget.isVisible) return null;
 
   const { widgetType, config } = widget;
@@ -23,7 +26,7 @@ export default function WidgetRenderer({ widget, onConfigChange }: Props) {
     case "Heading":
       return <HeadingWidget config={config} onConfigChange={onConfigChange} />;
     case "Paragraph":
-      return <ParagraphWidget config={config} onConfigChange={onConfigChange} />;
+      return <ParagraphWidget config={config} onConfigChange={onConfigChange} editing={editing} setEditing={setEditing} clearEditing={clearEditing} />;
     case "Link":
       return <LinkWidget config={config} />;
     case "Image":

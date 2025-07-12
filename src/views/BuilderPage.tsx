@@ -87,9 +87,13 @@ export default function BuilderPage() {
       for (const w of newWidgets) {
         await saveWidget(w);
       }
-      setWidgets(newWidgets);
+      // Re-fetch widgets from backend to ensure sync
+      const updated = await getWidgetsByPageId(selectedPageId);
+      setWidgets(updated);
 
-      setSelectedWidgetId(tempWidget.id);
+      // Find the new widget by type and orderIndex (should be unique)
+      const newWidget = updated.find(w => w.widgetType === type && w.orderIndex === insertAt);
+      setSelectedWidgetId(newWidget ? newWidget.id : tempWidget.id);
       setActivePropertiesTab(0); // Switch to Properties tab
     } catch (err) {
       console.error("Failed to add widget:", err);

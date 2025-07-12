@@ -45,6 +45,9 @@ function SortableWidget({
   onDelete,
   onConfigChange,
   children,
+  editing,
+  setEditing,
+  clearEditing,
 }: {
   widget: WidgetInstance;
   selected: boolean;
@@ -52,6 +55,9 @@ function SortableWidget({
   onDelete: () => void;
   onConfigChange: (key: string, value: any) => void;
   children?: React.ReactNode;
+  editing: boolean;
+  setEditing: () => void;
+  clearEditing: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
@@ -147,6 +153,7 @@ export default function WidgetCanvas({
   onAddWidget,
   activeDragFromToolbox = false,
 }: Props) {
+  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
 
   const handleWidgetConfigChange = (widgetId: string, key: string, value: any) => {
     onReorder(
@@ -198,7 +205,6 @@ export default function WidgetCanvas({
             fontStyle: "italic",
             background: "#f9f9f9",
             borderRadius: "8px",
-            border: "1px dashed #ccc",
           }}
         >
           No widgets yet. Select a page and add widgets from the sidebar.
@@ -219,10 +225,16 @@ export default function WidgetCanvas({
                   onSelect={() => onSelectWidget(widgets[i].id)}
                   onDelete={() => onDeleteWidget(widgets[i].id)}
                   onConfigChange={(key, value) => handleWidgetConfigChange(widgets[i].id, key, value)}
+                  editing={editingWidgetId === widgets[i].id}
+                  setEditing={() => setEditingWidgetId(widgets[i].id)}
+                  clearEditing={() => setEditingWidgetId(null)}
                 >
                   <WidgetRenderer
                     widget={widgets[i]}
                     onConfigChange={(key, value) => handleWidgetConfigChange(widgets[i].id, key, value)}
+                    editing={editingWidgetId === widgets[i].id}
+                    setEditing={() => setEditingWidgetId(widgets[i].id)}
+                    clearEditing={() => setEditingWidgetId(null)}
                     renderChildren={() => null}
                   />
                 </SortableWidget>

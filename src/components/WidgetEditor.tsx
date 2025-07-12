@@ -114,6 +114,10 @@ export default function WidgetEditor({
         {definitionFields.map((field) => {
           // Skip the src field for Image widget (handled by file input above)
           if (widget.widgetType === "Image" && field.key === "src") return null;
+          // Skip the text field for Paragraph widget (handled inline, not in sidebar)
+          if (widget.widgetType === "Paragraph" && field.key === "text") return null;
+          // Skip the size field for Heading widget (handled by dropdown)
+          if (widget.widgetType === "Heading" && field.key === "size") return null;
           return (
             <div key={field.key} style={{ marginBottom: "0.5rem" }}>
               <label
@@ -139,6 +143,26 @@ export default function WidgetEditor({
             </div>
           );
         })}
+        {/* Heading size dropdown for Heading widget */}
+        {widget.widgetType === "Heading" && (
+          <div style={{ marginBottom: "0.5rem" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+              Heading Size
+            </label>
+            <select
+              value={widget.config.size || "h2"}
+              onChange={e => onChange("size", e.target.value)}
+              style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc" }}
+            >
+              <option value="h1">H1 (Largest)</option>
+              <option value="h2">H2</option>
+              <option value="h3">H3</option>
+              <option value="h4">H4</option>
+              <option value="h5">H5</option>
+              <option value="h6">H6 (Smallest)</option>
+            </select>
+          </div>
+        )}
         <Button
           icon="pi pi-save"
           onClick={onSave}
@@ -276,7 +300,7 @@ export default function WidgetEditor({
       <div className="toolbox">
         {Object.entries(groups).map(([category, widgets]) => (
           <div key={category} style={{ width: '100%' }}>
-            <div style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0.5rem 0 0.25rem 0.25rem', color: '#444' }}>{category}</div>
+            <div className="toolbox-category-title">{category}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {widgets.map((w) => {
                 const tooltipId = getTooltipId(w.widgetType);

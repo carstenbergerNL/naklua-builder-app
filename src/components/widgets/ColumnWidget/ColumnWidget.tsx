@@ -23,6 +23,7 @@ export default function ColumnWidget({ id, config = {}, children }: ColumnWidget
         gap: 16,
         background: isOver ? '#e0f7fa' : undefined,
         outline: isOver ? '2px solid #2196f3' : undefined,
+        borderRadius: 0,
         transition: 'background 0.2s, outline 0.2s',
         ...style,
       }}
