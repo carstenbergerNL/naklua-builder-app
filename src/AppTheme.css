@@ -216,4 +216,8 @@ body {
 }
 .p-menuitem-text {
   font-size: 0.85rem;
+}
+
+.dnd-dragging, .dnd-dragging * {
+  cursor: grabbing !important;
 } 

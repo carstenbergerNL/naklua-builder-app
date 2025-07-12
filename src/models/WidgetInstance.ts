@@ -1,6 +1,7 @@
 export interface WidgetInstance {
   id: string;
   pageId: string;
+  parentId?: string | null;
   widgetType: string;
   label?: string;
   config: Record<string, any>;

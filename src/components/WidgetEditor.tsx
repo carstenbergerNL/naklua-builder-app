@@ -8,13 +8,14 @@ import { Page } from "../models/Page";
 import { Tooltip } from "primereact/tooltip";
 import { Tooltip as PrimeTooltip } from 'primereact/tooltip';
 import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
 
 interface Props {
   widget: WidgetInstance | null;
   onChange: (key: string, value: any) => void;
   onSave: () => void;
   saving: boolean;
-  onAddWidget: (type: string) => void;
+  onAddWidget: (type: string, parentId?: string | null) => void;
   availableWidgets: WidgetDefinition[];
   pages?: Page[];
   onSelectPage?: (id: string) => void;
@@ -229,6 +230,38 @@ export default function WidgetEditor({
     );
   };
 
+  function ToolboxItem({ widgetDef, onAddWidget, renderWidgetIcon, tooltipId }: {
+    widgetDef: WidgetDefinition;
+    onAddWidget: (type: string, parentId?: string | null) => void;
+    renderWidgetIcon: (w: WidgetDefinition) => React.ReactNode;
+    tooltipId: string;
+  }) {
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+      id: `toolbox-draggable-${widgetDef.widgetType}`,
+      data: { fromToolbox: true, widgetType: widgetDef.widgetType }
+    });
+    return (
+      <div
+        ref={setNodeRef}
+        id={tooltipId}
+        className="toolbox-item"
+        {...attributes}
+        {...listeners}
+        onClick={() => onAddWidget(widgetDef.widgetType, undefined)}
+        style={{
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          display: 'flex',
+          opacity: isDragging ? 0.5 : 1,
+          cursor: 'grab',
+        }}
+      >
+        {renderWidgetIcon(widgetDef)}
+      </div>
+    );
+  }
+
   function renderToolbox() {
     // Group widgets by category
     const groups: { [category: string]: WidgetDefinition[] } = {};
@@ -249,16 +282,12 @@ export default function WidgetEditor({
                 const tooltipId = getTooltipId(w.widgetType);
                 return (
                   <React.Fragment key={w.widgetType}>
-                    <div
-                      id={tooltipId}
-                      className="toolbox-item"
-                      onClick={() => {
-                        onAddWidget(w.widgetType);
-                      }}
-                      style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', display: 'flex' }}
-                    >
-                      {renderWidgetIcon(w)}
-                    </div>
+                    <ToolboxItem
+                      widgetDef={w}
+                      onAddWidget={onAddWidget}
+                      renderWidgetIcon={renderWidgetIcon}
+                      tooltipId={tooltipId}
+                    />
                     <PrimeTooltip target={`#${tooltipId}`} content={w.displayName} position="top" />
                   </React.Fragment>
                 );

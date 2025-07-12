@@ -11,6 +11,7 @@ import WordPressPageWidget from "./widgets/WordPressPageWidget/WordPressPageWidg
 interface Props {
   widget: WidgetInstance;
   onConfigChange?: (key: string, value: any) => void;
+  renderChildren?: () => React.ReactNode;
 }
 
 export default function WidgetRenderer({ widget, onConfigChange }: Props) {

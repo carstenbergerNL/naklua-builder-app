@@ -1,16 +1,15 @@
 import { WidgetInstance } from "../models/WidgetInstance";
 import { Button } from "primereact/button";
 import WidgetRenderer from "./WidgetRenderer";
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 
 interface Props {
   widgets: WidgetInstance[];
@@ -19,6 +18,24 @@ interface Props {
   onDeleteWidget: (id: string) => void;
   onReorder: (widgets: WidgetInstance[]) => void;
   pageName: string;
+  onAddWidget?: (type: string, parentId?: string | null, orderIndex?: number) => void;
+  activeDragFromToolbox?: boolean;
+}
+
+function DropZone({ id, isActive }: { id: string; isActive: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id, data: { isDropZone: true } });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        height: 8, // reduced from 18
+        background: isOver || isActive ? '#b3e5fc' : 'transparent',
+        transition: 'background 0.2s',
+        margin: '2px 0',
+        borderRadius: 4,
+      }}
+    />
+  );
 }
 
 function SortableWidget({
@@ -27,16 +44,19 @@ function SortableWidget({
   onSelect,
   onDelete,
   onConfigChange,
+  children,
 }: {
   widget: WidgetInstance;
   selected: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onConfigChange: (key: string, value: any) => void;
+  children?: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: widget.id,
+      data: { fromToolbox: false },
     });
 
   const style: React.CSSProperties = {
@@ -71,7 +91,7 @@ function SortableWidget({
 
       {/* Widget Content */}
       <div style={{ paddingLeft: "1.5rem" }}>
-        <WidgetRenderer widget={widget} onConfigChange={(key, value) => onConfigChange(key, value)} />
+        {children}
       </div>
 
       {/* Mendix-style Delete Button */}
@@ -124,7 +144,10 @@ export default function WidgetCanvas({
   onDeleteWidget,
   onReorder,
   pageName,
+  onAddWidget,
+  activeDragFromToolbox = false,
 }: Props) {
+
   const handleWidgetConfigChange = (widgetId: string, key: string, value: any) => {
     onReorder(
       widgets.map(w =>
@@ -132,8 +155,39 @@ export default function WidgetCanvas({
       )
     );
   };
+
+  // Render drop zones between widgets
+  const renderWithDropZones = () => {
+    const elements: React.ReactNode[] = [];
+    for (let i = 0; i <= widgets.length; i++) {
+      elements.push(
+        <DropZone key={`dropzone-${i}`} id={`dropzone-${i}`} isActive={false} />
+      );
+      if (i < widgets.length) {
+        elements.push(widgets[i].id);
+      }
+    }
+    return elements;
+  };
+
+  // Make the canvas a droppable area
+  const { setNodeRef: setCanvasRef, isOver: isOverCanvas } = useDroppable({
+    id: 'canvas-root',
+    data: { isCanvas: true }
+  });
+
   return (
-    <div className="app-canvas">
+    <div
+      ref={setCanvasRef}
+      className="app-canvas"
+      style={{
+        outline: isOverCanvas ? '2px solid #2196f3' : undefined,
+        transition: 'outline 0.2s',
+        minHeight: 300,
+        background: '#f9f9f9',
+        position: 'relative',
+      }}
+    >
       {/* Info bar will be rendered in BuilderPage, not here */}
       {widgets.length === 0 ? (
         <div
@@ -150,39 +204,32 @@ export default function WidgetCanvas({
           No widgets yet. Select a page and add widgets from the sidebar.
         </div>
       ) : (
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={(event: DragEndEvent) => {
-            const { active, over } = event;
-            if (!over || active.id === over.id) return;
-
-            const oldIndex = widgets.findIndex((w) => w.id === active.id);
-            const newIndex = widgets.findIndex((w) => w.id === over.id);
-
-            if (oldIndex !== -1 && newIndex !== -1) {
-              const updated = arrayMove(widgets, oldIndex, newIndex).map(
-                (w, i) => ({ ...w, orderIndex: i })
-              );
-              onReorder(updated); // ✅ update parent state
-            }
-          }}
+        <SortableContext
+          items={widgets.map((w) => w.id)}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={widgets.map((w) => w.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {widgets.map((widget) => (
-              <SortableWidget
-                key={widget.id}
-                widget={widget}
-                selected={selectedWidgetId === widget.id}
-                onSelect={() => onSelectWidget(widget.id)}
-                onDelete={() => onDeleteWidget(widget.id)}
-                onConfigChange={(key, value) => handleWidgetConfigChange(widget.id, key, value)}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+          {Array.from({ length: widgets.length + 1 }).map((_, i) => (
+            <React.Fragment key={`dropzone-widget-${i}`}>
+              {activeDragFromToolbox && <DropZone id={`dropzone-${i}`} isActive={false} />}
+              {i < widgets.length && (
+                <SortableWidget
+                  key={widgets[i].id}
+                  widget={widgets[i]}
+                  selected={selectedWidgetId === widgets[i].id}
+                  onSelect={() => onSelectWidget(widgets[i].id)}
+                  onDelete={() => onDeleteWidget(widgets[i].id)}
+                  onConfigChange={(key, value) => handleWidgetConfigChange(widgets[i].id, key, value)}
+                >
+                  <WidgetRenderer
+                    widget={widgets[i]}
+                    onConfigChange={(key, value) => handleWidgetConfigChange(widgets[i].id, key, value)}
+                    renderChildren={() => null}
+                  />
+                </SortableWidget>
+              )}
+            </React.Fragment>
+          ))}
+        </SortableContext>
       )}
     </div>
   );
