@@ -26,6 +26,12 @@ import { DomainEntity } from '../models/DomainEntity';
 import { getDomainAttributesByEntity } from '../services/domainAttributeService';
 import { DomainAttribute } from '../models/DomainAttribute';
 import { Dialog } from 'primereact/dialog';
+import { updateDomainAttribute } from '../services/domainAttributeService';
+import { createDomainAttribute } from '../services/domainAttributeService';
+import { deleteDomainAttribute } from '../services/domainAttributeService';
+
+const appInstanceId = "D0D27157-418C-47AE-A8AB-EF6DD0AD0955";
+const user = { id: 'E02ECABE-BF6E-44FE-9512-5C3A18A62793', name: 'Test User' };
 
 export default function BuilderPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -40,8 +46,6 @@ export default function BuilderPage() {
   const [activeDragWidgetType, setActiveDragWidgetType] = useState<string | null>(null);
   const dragging = useRef(false);
   const [activeDragFromToolbox, setActiveDragFromToolbox] = useState(false);
-
-  const appInstanceId = "D0D27157-418C-47AE-A8AB-EF6DD0AD0955";
 
   useEffect(() => {
     getPages(appInstanceId).then(setPages);
@@ -466,6 +470,7 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
                     setEntityDialogPersistable(true);
                     setEntityDialogTab(0);
                     setShowAddAttrDialog(true);
+                    setSelectedAttrId(null);
                   }}
                 >
                   {/* Header */}
@@ -747,7 +752,7 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
                 isRequired: !!newAttr.isRequired,
                 isPrimaryKey: !!newAttr.isPrimaryKey,
                 defaultValue: newAttr.defaultValue || '',
-                creatorId: 'local',
+                creatorId: user.id,
                 createdAt: new Date().toISOString(),
               };
               setEntityAttributes(prev => {
@@ -799,8 +804,13 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
               <div style={{ marginBottom: 8 }}>
                 <button className="button-primary" style={{ marginRight: 8 }} onClick={() => { setEditAttrIdx(null); setShowAttrEditDialog(true); }}>New</button>
                 <button style={{ marginRight: 8 }} onClick={() => { setEditAttrIdx((entityAttributes[addAttrEntityId || ''] || []).findIndex(a => a.id === selectedAttrId)); setShowAttrEditDialog(true); }} disabled={!selectedAttrId}>Edit</button>
-                <button onClick={() => {
+                <button onClick={async () => {
                   if (!addAttrEntityId || !selectedAttrId) return;
+                  try {
+                    await deleteDomainAttribute(selectedAttrId);
+                  } catch (e) {
+                    // Optionally show error
+                  }
                   setEntityAttributes(prev => {
                     const map = { ...prev };
                     map[addAttrEntityId] = (map[addAttrEntityId] || []).filter(a => a.id !== selectedAttrId);
@@ -819,7 +829,16 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
                 </thead>
                 <tbody>
                   {(entityAttributes[addAttrEntityId || ''] || []).map(attr => (
-                    <tr key={attr.id} style={{ borderBottom: '1px solid #e0e4ea' }}>
+                    <tr key={attr.id}
+                      onClick={() => setSelectedAttrId(attr.id)}
+                      onDoubleClick={() => {
+                        setSelectedAttrId(attr.id);
+                        const idx = (entityAttributes[addAttrEntityId || ''] || []).findIndex(a => a.id === attr.id);
+                        setEditAttrIdx(idx);
+                        setNewAttr(attr);
+                        setShowAttrEditDialog(true);
+                      }}
+                      style={{ borderBottom: '1px solid #e0e4ea', background: selectedAttrId === attr.id ? '#eaf6fb' : undefined, cursor: 'pointer' }}>
                       <td style={{ padding: '4px 8px' }}>{attr.name}</td>
                       <td style={{ padding: '4px 8px' }}>{attr.dataType}</td>
                       <td style={{ padding: '4px 8px' }}>{attr.defaultValue}</td>
@@ -836,6 +855,7 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
               setEntities(prev => prev.map(ent => ent.id === entityDialogData.id ? { ...ent, ...entityDialogData } : ent));
             }
             setShowAddAttrDialog(false);
+            setSelectedAttrId(null);
           }}>OK</button>
           <button onClick={() => setShowAddAttrDialog(false)}>Cancel</button>
         </div>
@@ -870,8 +890,47 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
             <input value={newAttr.defaultValue} onChange={e => setNewAttr(attr => ({ ...attr, defaultValue: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
           </div>
           <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <button className="button-primary" style={{ marginRight: 8 }} onClick={() => {
+            <button className="button-primary" style={{ marginRight: 8 }} onClick={async () => {
               if (!addAttrEntityId || !newAttr.name || !newAttr.dataType) return;
+              if (editAttrIdx !== null) {
+                // Edit existing: call API
+                const attrList = entityAttributes[addAttrEntityId] || [];
+                const oldAttr = attrList[editAttrIdx];
+                const dto = {
+                  id: oldAttr.id,
+                  entityId: addAttrEntityId,
+                  name: newAttr.name,
+                  dataType: newAttr.dataType,
+                  length: newAttr.length || 0,
+                  isRequired: !!newAttr.isRequired,
+                  isPrimaryKey: !!newAttr.isPrimaryKey,
+                  defaultValue: newAttr.defaultValue || '',
+                  creatorId: oldAttr.creatorId,
+                  createdAt: oldAttr.createdAt,
+                };
+                try {
+                  await updateDomainAttribute(dto);
+                } catch (e) {
+                  // Optionally show error
+                }
+              } else {
+                // Add new: call API
+                const dto = {
+                  entityId: addAttrEntityId,
+                  name: newAttr.name,
+                  dataType: newAttr.dataType,
+                  length: newAttr.length || 0,
+                  isRequired: !!newAttr.isRequired,
+                  isPrimaryKey: !!newAttr.isPrimaryKey,
+                  defaultValue: newAttr.defaultValue || '',
+                  creatorId: user.id,
+                };
+                try {
+                  await createDomainAttribute(dto);
+                } catch (e) {
+                  // Optionally show error
+                }
+              }
               setEntityAttributes(prev => {
                 const map = { ...prev };
                 if (editAttrIdx !== null) {
@@ -888,7 +947,7 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
                     isRequired: !!newAttr.isRequired,
                     isPrimaryKey: !!newAttr.isPrimaryKey,
                     defaultValue: newAttr.defaultValue || '',
-                    creatorId: 'local',
+                    creatorId: user.id,
                     createdAt: new Date().toISOString(),
                   };
                   map[addAttrEntityId] = [...(map[addAttrEntityId] || []), attr];
