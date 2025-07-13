@@ -19,6 +19,8 @@ import { arrayMove } from "@dnd-kit/sortable";
 import WidgetRenderer from "../components/WidgetRenderer";
 import { getDomainModelsByApp } from "../services/domainModelService";
 import { DomainModel } from "../models/DomainModel";
+import React from "react";
+import { TabView, TabPanel } from 'primereact/tabview';
 
 export default function BuilderPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -244,6 +246,16 @@ export default function BuilderPage() {
     console.log('DnD handleDragCancel');
   };
 
+  React.useEffect(() => {
+    function handleUpdateDomainModel(e: any) {
+      setDomainModels((prev: DomainModel[]) => prev.map((dm: DomainModel) =>
+        dm.id === e.detail.id ? { ...dm, name: e.detail.name, description: e.detail.description } : dm
+      ));
+    }
+    window.addEventListener('updateDomainModel', handleUpdateDomainModel);
+    return () => window.removeEventListener('updateDomainModel', handleUpdateDomainModel);
+  }, []);
+
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <Topbar availableWidgets={availableWidgets} onAddWidget={addWidget} />
@@ -325,7 +337,35 @@ export default function BuilderPage() {
 
 // DomainModelDetails component
 function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }) {
+  const [editName, setEditName] = React.useState(domainModel?.name || "");
+  const [editDescription, setEditDescription] = React.useState(domainModel?.description || "");
+  const [editing, setEditing] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState(0);
+
+  React.useEffect(() => {
+    setEditName(domainModel?.name || "");
+    setEditDescription(domainModel?.description || "");
+    setEditing(false);
+  }, [domainModel]);
+
   if (!domainModel) return <div style={{ padding: 32, color: '#888' }}>No Domain Model selected</div>;
+
+  // Save handler: update domainModels state in parent
+  const handleSave = () => {
+    if (domainModel.name !== editName || domainModel.description !== editDescription) {
+      // Custom event to parent (BuilderPage) to update domainModels state
+      const event = new CustomEvent('updateDomainModel', {
+        detail: {
+          id: domainModel.id,
+          name: editName,
+          description: editDescription,
+        },
+      });
+      window.dispatchEvent(event);
+    }
+    setEditing(false);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%' }}>
       <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column' }}>
@@ -334,13 +374,50 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
         </div>
         <div style={{ flex: 1 }} />
       </div>
-      <div className="app-widget-editor" style={{ minWidth: 320, maxWidth: 400, width: 400 }}>
-        <div style={{ fontWeight: 600, marginBottom: 16 }}>Domain Model Details</div>
-        <div><b>Name:</b> {domainModel.name}</div>
-        <div><b>Description:</b> {domainModel.description}</div>
-        <div><b>Created At:</b> {new Date(domainModel.createdAt).toLocaleString()}</div>
-        <div><b>Creator ID:</b> {domainModel.creatorId}</div>
-        <div style={{ marginTop: 24, color: '#888' }}><i>Extend this view to show entities, attributes, etc.</i></div>
+      <div className="app-widget-editor" style={{ minWidth: 320, maxWidth: 400, width: 400, padding: 0 }}>
+        <TabView activeIndex={activeTab} onTabChange={e => setActiveTab(e.index)}>
+          <TabPanel header="Properties">
+            <div style={{ padding: '1.5rem 1.5rem 0 1.5rem' }}>
+              <div style={{ fontWeight: 600, marginBottom: 16 }}>Domain Model Details</div>
+              <div><b>Name:</b> {editing ? (
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  style={{ width: '100%', marginBottom: 8 }}
+                />
+              ) : (
+                <span style={{ marginLeft: 8 }}>{domainModel.name}</span>
+              )}</div>
+              <div><b>Description:</b> {editing ? (
+                <textarea
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  style={{ width: '100%', marginBottom: 8 }}
+                  rows={3}
+                />
+              ) : (
+                <span style={{ marginLeft: 8 }}>{domainModel.description}</span>
+              )}</div>
+              <div><b>Created At:</b> {new Date(domainModel.createdAt).toLocaleString()}</div>
+              <div><b>Creator ID:</b> {domainModel.creatorId}</div>
+              {editing ? (
+                <div style={{ marginTop: 16 }}>
+                  <button className="button-primary" style={{ marginRight: 8 }} onClick={handleSave}>Save</button>
+                  <button style={{ marginRight: 8 }} onClick={() => setEditing(false)}>Cancel</button>
+                </div>
+              ) : (
+                <div style={{ marginTop: 16 }}>
+                  <button className="button-primary" onClick={() => setEditing(true)}>Edit</button>
+                </div>
+              )}
+            </div>
+          </TabPanel>
+          <TabPanel header="Toolbox">
+            <div style={{ padding: '1.5rem' }}>
+              <i>Toolbox for this Domain Model will be shown here.</i>
+            </div>
+          </TabPanel>
+        </TabView>
       </div>
     </div>
   );
