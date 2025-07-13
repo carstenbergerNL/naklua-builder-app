@@ -21,6 +21,8 @@ import { getDomainModelsByApp } from "../services/domainModelService";
 import { DomainModel } from "../models/DomainModel";
 import React from "react";
 import { TabView, TabPanel } from 'primereact/tabview';
+import { getDomainEntitiesByModel } from '../services/domainEntityService';
+import { DomainEntity } from '../models/DomainEntity';
 
 export default function BuilderPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -341,11 +343,19 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
   const [editDescription, setEditDescription] = React.useState(domainModel?.description || "");
   const [editing, setEditing] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState(0);
+  const [entities, setEntities] = React.useState<DomainEntity[]>([]);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     setEditName(domainModel?.name || "");
     setEditDescription(domainModel?.description || "");
     setEditing(false);
+    if (domainModel) {
+      setLoading(true);
+      getDomainEntitiesByModel(domainModel.id).then(setEntities).finally(() => setLoading(false));
+    } else {
+      setEntities([]);
+    }
   }, [domainModel]);
 
   if (!domainModel) return <div style={{ padding: 32, color: '#888' }}>No Domain Model selected</div>;
@@ -372,7 +382,34 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
         <div className="info-bar" style={{ marginBottom: 0 }}>
           Domain Model: <b>{domainModel.name}</b>
         </div>
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: 1, padding: '2rem 2.5rem', overflow: 'auto' }}>
+          <h2 style={{ marginBottom: 16 }}>Entities</h2>
+          {loading ? (
+            <div style={{ color: '#888' }}>Loading entities...</div>
+          ) : entities.length === 0 ? (
+            <div style={{ color: '#888' }}>No entities found for this domain model.</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+              {entities.map(entity => (
+                <div key={entity.id} style={{
+                  background: '#eaf6fb',
+                  border: '1.5px solid #b5d6e6',
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  padding: '1.25rem 1.5rem',
+                  minWidth: 240,
+                  maxWidth: 320,
+                  flex: '1 1 260px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}>
+                  <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#1b6ca8', marginBottom: 4 }}>{entity.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <div className="app-widget-editor" style={{ minWidth: 320, maxWidth: 400, width: 400, padding: 0 }}>
         <TabView activeIndex={activeTab} onTabChange={e => setActiveTab(e.index)}>
