@@ -365,6 +365,10 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
   const [showAttrEditDialog, setShowAttrEditDialog] = React.useState(false);
   const [editAttrIdx, setEditAttrIdx] = React.useState<number | null>(null);
   const [selectedAttrId, setSelectedAttrId] = React.useState<string | null>(null);
+  const [showDeleteAttrConfirm, setShowDeleteAttrConfirm] = React.useState(false);
+  const [tableNameError, setTableNameError] = React.useState<string | null>(null);
+  const [generatingSql, setGeneratingSql] = React.useState(false);
+  const [sqlGenMessage, setSqlGenMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setEditName(domainModel?.name || "");
@@ -515,6 +519,30 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
             </div>
           )}
         </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
+          <button
+            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, padding: '0.5em 1.2em', fontWeight: 500, cursor: 'pointer' }}
+            disabled={generatingSql}
+            onClick={async () => {
+              if (!domainModel?.id) return;
+              setGeneratingSql(true);
+              setSqlGenMessage(null);
+              try {
+                const res = await fetch(`/sql-generator/execute/${domainModel.id}`, { method: 'POST' });
+                if (res.ok) {
+                  setSqlGenMessage('Tables generated successfully!');
+                } else {
+                  setSqlGenMessage('Failed to generate tables.');
+                }
+              } catch (e) {
+                setSqlGenMessage('Error generating tables.');
+              } finally {
+                setGeneratingSql(false);
+              }
+            }}
+          >{generatingSql ? 'Generating...' : 'Generate Tables'}</button>
+          {sqlGenMessage && <div style={{ color: sqlGenMessage.includes('success') ? 'green' : 'red', marginLeft: 16 }}>{sqlGenMessage}</div>}
+        </div>
       </div>
       <div className="app-widget-editor" style={{ minWidth: 320, maxWidth: 400, width: 400, padding: 0 }}>
         <TabView activeIndex={activeTab} onTabChange={e => setActiveTab(e.index)}>
@@ -638,12 +666,18 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
                     <div style={{ marginBottom: '0.5rem' }}>
                       <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Table Name</label>
                       <input value={selectedEntity.tableName} onChange={e => {
-                        const updated = { ...selectedEntity, tableName: e.target.value };
-                        setSelectedEntity(updated);
-                        setEntities(prev => prev.map(ent => ent.id === updated.id ? updated : ent));
+                        const value = e.target.value;
+                        setSelectedEntity(updated => updated ? { ...updated, tableName: value } : updated);
+                        // Validation: starts with capital, no spaces, no special chars
+                        if (!/^[A-Z][A-Za-z0-9]*$/.test(value)) {
+                          setTableNameError('Table name must start with a capital letter and contain only letters and numbers (no spaces or special characters).');
+                        } else {
+                          setTableNameError(null);
+                        }
                       }} onBlur={() => {
                         setEntities(prev => prev.map(ent => ent.id === selectedEntity.id ? selectedEntity : ent));
                       }} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                      {tableNameError && <div style={{ color: 'red', fontSize: '0.85rem', marginTop: 2 }}>{tableNameError}</div>}
                     </div>
                     <div style={{ marginBottom: '0.5rem' }}>
                       <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Description</label>
@@ -768,56 +802,42 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
       </Dialog>
       {/* Entity Dialog */}
       <Dialog header={`Properties of Entity '${entityDialogData?.name || ''}'`} visible={showAddAttrDialog} style={{ width: 600 }} onHide={() => setShowAddAttrDialog(false)}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '120px 1fr',
+          alignItems: 'center',
+          rowGap: 14,
+          columnGap: 16,
+          fontSize: '0.93rem',
+          padding: '1rem 0.5rem',
+          maxWidth: 500,
+        }}>
+          <label style={{ fontWeight: 500, fontSize: '0.85rem', textAlign: 'right' }}>Name</label>
+          <input value={entityDialogData?.name || ''} onChange={e => setEntityDialogData(d => d ? { ...d, name: e.target.value } : d)} style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #ccc' }} />
+          <label style={{ fontWeight: 500, fontSize: '0.85rem', textAlign: 'right' }}>Table Name</label>
+          <input value={entityDialogData?.tableName || ''} onChange={e => {
+            const value = e.target.value;
+            setEntityDialogData(d => d ? { ...d, tableName: value } : d);
+            // Validation: starts with capital, no spaces, no special chars
+            if (!/^[A-Z][A-Za-z0-9]*$/.test(value)) {
+              setTableNameError('Table name must start with a capital letter and contain only letters and numbers (no spaces or special characters).');
+            } else {
+              setTableNameError(null);
+            }
+          }} onBlur={() => {
+            if (!entityDialogData) return;
+            setEntities(prev => prev.map(ent => ent.id === entityDialogData.id ? entityDialogData : ent));
+          }} style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #ccc' }} />
+          <label style={{ fontWeight: 500, fontSize: '0.85rem', textAlign: 'right', alignSelf: 'start', marginTop: 4 }}>Description</label>
+          <textarea value={entityDialogData?.description || ''} onChange={e => setEntityDialogData(d => d ? { ...d, description: e.target.value } : d)} style={{ width: '100%', minHeight: 48, padding: '0.4rem', borderRadius: 4, border: '1px solid #ccc', resize: 'vertical' }} />
+        </div>
         <TabView activeIndex={entityDialogTab} onTabChange={e => setEntityDialogTab(e.index)}>
-          <TabPanel header="General">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.93rem', padding: '1rem 0.5rem' }}>
-              <div>
-                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Name</label>
-                <input value={entityDialogData?.name || ''} onChange={e => setEntityDialogData(d => d ? { ...d, name: e.target.value } : d)} style={{ width: 220, marginLeft: 8, padding: '0.4rem', borderRadius: 4, border: '1px solid #ccc' }} />
-              </div>
-              <div>
-                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Generalization</label>
-                <select value={''} style={{ width: 220, marginLeft: 8, padding: '0.4rem', borderRadius: 4, border: '1px solid #ccc' }} disabled>
-                  <option>(none)</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Persistable</label>
-                <input type="checkbox" checked={entityDialogPersistable} onChange={e => setEntityDialogPersistable(e.target.checked)} />
-              </div>
-              <div style={{ marginTop: 8, fontSize: '0.85rem', color: '#444' }}>
-                Objects of this entity can only be stored in the database if it is persistable.
-              </div>
-              <div style={{ marginTop: 16, border: '1px solid #eee', borderRadius: 4, padding: 8, background: '#fafbfc' }}>
-                <div style={{ fontWeight: 500, marginBottom: 4 }}>System members</div>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  <label><input type="checkbox" checked={entityDialogSysMembers.createdDate} onChange={e => setEntityDialogSysMembers(s => ({ ...s, createdDate: e.target.checked }))} /> Store 'createdDate'</label>
-                  <label><input type="checkbox" checked={entityDialogSysMembers.changedDate} onChange={e => setEntityDialogSysMembers(s => ({ ...s, changedDate: e.target.checked }))} /> Store 'changedDate'</label>
-                  <label><input type="checkbox" checked={entityDialogSysMembers.owner} onChange={e => setEntityDialogSysMembers(s => ({ ...s, owner: e.target.checked }))} /> Store 'owner'</label>
-                  <label><input type="checkbox" checked={entityDialogSysMembers.changedBy} onChange={e => setEntityDialogSysMembers(s => ({ ...s, changedBy: e.target.checked }))} /> Store 'changedBy'</label>
-                </div>
-              </div>
-            </div>
-          </TabPanel>
           <TabPanel header="Attributes">
             <div style={{ padding: '1rem 0.5rem' }}>
               <div style={{ marginBottom: 8 }}>
                 <button className="button-primary" style={{ marginRight: 8 }} onClick={() => { setEditAttrIdx(null); setShowAttrEditDialog(true); }}>New</button>
                 <button style={{ marginRight: 8 }} onClick={() => { setEditAttrIdx((entityAttributes[addAttrEntityId || ''] || []).findIndex(a => a.id === selectedAttrId)); setShowAttrEditDialog(true); }} disabled={!selectedAttrId}>Edit</button>
-                <button onClick={async () => {
-                  if (!addAttrEntityId || !selectedAttrId) return;
-                  try {
-                    await deleteDomainAttribute(selectedAttrId);
-                  } catch (e) {
-                    // Optionally show error
-                  }
-                  setEntityAttributes(prev => {
-                    const map = { ...prev };
-                    map[addAttrEntityId] = (map[addAttrEntityId] || []).filter(a => a.id !== selectedAttrId);
-                    return map;
-                  });
-                  setSelectedAttrId(null);
-                }} disabled={!selectedAttrId}>Delete</button>
+                <button onClick={() => setShowDeleteAttrConfirm(true)} disabled={!selectedAttrId}>Delete</button>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.93rem' }}>
                 <thead>
@@ -851,6 +871,7 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
         </TabView>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
           <button className="button-primary" onClick={() => {
+            if (tableNameError) return;
             if (entityDialogData) {
               setEntities(prev => prev.map(ent => ent.id === entityDialogData.id ? { ...ent, ...entityDialogData } : ent));
             }
@@ -859,108 +880,161 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
           }}>OK</button>
           <button onClick={() => setShowAddAttrDialog(false)}>Cancel</button>
         </div>
-        {/* Attribute New/Edit sub-dialog can be added here in the future */}
       </Dialog>
       {/* Attribute New/Edit sub-dialog */}
-      <Dialog header={editAttrIdx !== null ? 'Edit Attribute' : 'New Attribute'} visible={showAttrEditDialog} style={{ width: 400 }} onHide={() => setShowAttrEditDialog(false)}>
-        <div style={{ fontSize: '0.93rem' }}>
-          {/* Same fields as before, prefilled if editing */}
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Name</label>
-            <input value={newAttr.name} onChange={e => setNewAttr(attr => ({ ...attr, name: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
-          </div>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Data Type</label>
-            <input value={newAttr.dataType} onChange={e => setNewAttr(attr => ({ ...attr, dataType: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
-          </div>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Length</label>
-            <input type="number" value={newAttr.length} onChange={e => setNewAttr(attr => ({ ...attr, length: Number(e.target.value) }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
-          </div>
-          <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={!!newAttr.isRequired} onChange={e => setNewAttr(attr => ({ ...attr, isRequired: e.target.checked }))} style={{ marginRight: 8 }} />
-            <label style={{ fontSize: '0.85rem', marginBottom: 0 }}>Required</label>
-          </div>
-          <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={!!newAttr.isPrimaryKey} onChange={e => setNewAttr(attr => ({ ...attr, isPrimaryKey: e.target.checked }))} style={{ marginRight: 8 }} />
-            <label style={{ fontSize: '0.85rem', marginBottom: 0 }}>Primary Key</label>
-          </div>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Default Value</label>
-            <input value={newAttr.defaultValue} onChange={e => setNewAttr(attr => ({ ...attr, defaultValue: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
-          </div>
-          <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <button className="button-primary" style={{ marginRight: 8 }} onClick={async () => {
-              if (!addAttrEntityId || !newAttr.name || !newAttr.dataType) return;
-              if (editAttrIdx !== null) {
-                // Edit existing: call API
-                const attrList = entityAttributes[addAttrEntityId] || [];
-                const oldAttr = attrList[editAttrIdx];
-                const dto = {
-                  id: oldAttr.id,
-                  entityId: addAttrEntityId,
-                  name: newAttr.name,
-                  dataType: newAttr.dataType,
-                  length: newAttr.length || 0,
-                  isRequired: !!newAttr.isRequired,
-                  isPrimaryKey: !!newAttr.isPrimaryKey,
-                  defaultValue: newAttr.defaultValue || '',
-                  creatorId: oldAttr.creatorId,
-                  createdAt: oldAttr.createdAt,
-                };
-                try {
-                  await updateDomainAttribute(dto);
-                } catch (e) {
-                  // Optionally show error
-                }
-              } else {
-                // Add new: call API
-                const dto = {
-                  entityId: addAttrEntityId,
-                  name: newAttr.name,
-                  dataType: newAttr.dataType,
-                  length: newAttr.length || 0,
-                  isRequired: !!newAttr.isRequired,
-                  isPrimaryKey: !!newAttr.isPrimaryKey,
-                  defaultValue: newAttr.defaultValue || '',
-                  creatorId: user.id,
-                };
-                try {
-                  await createDomainAttribute(dto);
-                } catch (e) {
-                  // Optionally show error
-                }
-              }
-              setEntityAttributes(prev => {
-                const map = { ...prev };
+      {showAttrEditDialog && (
+        <Dialog header={editAttrIdx !== null ? 'Edit Attribute' : 'New Attribute'} visible={true} style={{ width: 400, zIndex: 1200 }} onHide={() => setShowAttrEditDialog(false)}>
+          <div style={{ fontSize: '0.93rem' }}>
+            {/* Same fields as before, prefilled if editing */}
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Name</label>
+              <input value={newAttr.name} onChange={e => setNewAttr(attr => ({ ...attr, name: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+            </div>
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Data Type</label>
+              <input value={newAttr.dataType} onChange={e => setNewAttr(attr => ({ ...attr, dataType: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+            </div>
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Length</label>
+              <input type="number" value={newAttr.length} onChange={e => setNewAttr(attr => ({ ...attr, length: Number(e.target.value) }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+            </div>
+            <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
+              <input type="checkbox" checked={!!newAttr.isRequired} onChange={e => setNewAttr(attr => ({ ...attr, isRequired: e.target.checked }))} style={{ marginRight: 8 }} />
+              <label style={{ fontSize: '0.85rem', marginBottom: 0 }}>Required</label>
+            </div>
+            <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
+              <input type="checkbox" checked={!!newAttr.isPrimaryKey} onChange={e => setNewAttr(attr => ({ ...attr, isPrimaryKey: e.target.checked }))} style={{ marginRight: 8 }} />
+              <label style={{ fontSize: '0.85rem', marginBottom: 0 }}>Primary Key</label>
+            </div>
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Default Value</label>
+              <input value={newAttr.defaultValue} onChange={e => setNewAttr(attr => ({ ...attr, defaultValue: e.target.value }))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+            </div>
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <button className="button-primary" style={{ marginRight: 8 }} onClick={async () => {
+                if (!addAttrEntityId || !newAttr.name || !newAttr.dataType) return;
                 if (editAttrIdx !== null) {
-                  // Edit existing
-                  map[addAttrEntityId] = (map[addAttrEntityId] || []).map((a, i) => i === editAttrIdx ? { ...a, ...newAttr, id: a.id } : a);
-                } else {
-                  // Add new
-                  const attr: DomainAttribute = {
-                    id: crypto.randomUUID(),
+                  // Edit existing: call API
+                  const attrList = entityAttributes[addAttrEntityId] || [];
+                  const oldAttr = attrList[editAttrIdx];
+                  const dto = {
+                    id: oldAttr.id,
                     entityId: addAttrEntityId,
-                    name: newAttr.name!,
-                    dataType: newAttr.dataType!,
+                    name: newAttr.name,
+                    dataType: newAttr.dataType,
+                    length: newAttr.length || 0,
+                    isRequired: !!newAttr.isRequired,
+                    isPrimaryKey: !!newAttr.isPrimaryKey,
+                    defaultValue: newAttr.defaultValue || '',
+                    creatorId: oldAttr.creatorId,
+                    createdAt: oldAttr.createdAt,
+                  };
+                  try {
+                    await updateDomainAttribute(dto);
+                  } catch (e) {
+                    // Optionally show error
+                  }
+                } else {
+                  // Add new: call API
+                  const dto = {
+                    entityId: addAttrEntityId,
+                    name: newAttr.name,
+                    dataType: newAttr.dataType,
                     length: newAttr.length || 0,
                     isRequired: !!newAttr.isRequired,
                     isPrimaryKey: !!newAttr.isPrimaryKey,
                     defaultValue: newAttr.defaultValue || '',
                     creatorId: user.id,
-                    createdAt: new Date().toISOString(),
                   };
-                  map[addAttrEntityId] = [...(map[addAttrEntityId] || []), attr];
+                  try {
+                    await createDomainAttribute(dto);
+                  } catch (e) {
+                    // Optionally show error
+                  }
                 }
-                return map;
-              });
-              setShowAttrEditDialog(false);
-              setSelectedAttrId(null);
-            }}>Save</button>
-            <button onClick={() => setShowAttrEditDialog(false)}>Cancel</button>
+                setEntityAttributes(prev => {
+                  const map = { ...prev };
+                  if (editAttrIdx !== null) {
+                    // Edit existing
+                    map[addAttrEntityId] = (map[addAttrEntityId] || []).map((a, i) => i === editAttrIdx ? { ...a, ...newAttr, id: a.id } : a);
+                  } else {
+                    // Add new
+                    const attr: DomainAttribute = {
+                      id: crypto.randomUUID(),
+                      entityId: addAttrEntityId,
+                      name: newAttr.name!,
+                      dataType: newAttr.dataType!,
+                      length: newAttr.length || 0,
+                      isRequired: !!newAttr.isRequired,
+                      isPrimaryKey: !!newAttr.isPrimaryKey,
+                      defaultValue: newAttr.defaultValue || '',
+                      creatorId: user.id,
+                      createdAt: new Date().toISOString(),
+                    };
+                    map[addAttrEntityId] = [...(map[addAttrEntityId] || []), attr];
+                  }
+                  return map;
+                });
+                setShowAttrEditDialog(false);
+                setSelectedAttrId(null);
+              }}>Save</button>
+              <button onClick={() => setShowAttrEditDialog(false)}>Cancel</button>
+            </div>
           </div>
-        </div>
-      </Dialog>
+        </Dialog>
+      )}
+      {showDeleteAttrConfirm && (
+        <>
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.18)',
+            zIndex: 2099,
+          }} />
+          <div style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: '#fff',
+            border: '1px solid #ccc',
+            borderRadius: 8,
+            boxShadow: '0 2px 16px rgba(0,0,0,0.18)',
+            zIndex: 2100,
+            padding: '1.2rem 1.5rem',
+            minWidth: 260,
+          }}>
+            <div style={{ marginBottom: 14 }}>Delete this attribute?</div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                style={{ padding: '0.3em 1em', borderRadius: 4, border: 'none', background: '#e0e7ff', color: '#222', cursor: 'pointer' }}
+                onClick={() => setShowDeleteAttrConfirm(false)}
+              >No</button>
+              <button
+                style={{ padding: '0.3em 1em', borderRadius: 4, border: 'none', background: '#f44336', color: '#fff', cursor: 'pointer' }}
+                onClick={async () => {
+                  if (!addAttrEntityId || !selectedAttrId) return;
+                  try {
+                    await deleteDomainAttribute(selectedAttrId);
+                  } catch (e) {
+                    // Optionally show error
+                  }
+                  setEntityAttributes(prev => {
+                    const map = { ...prev };
+                    map[addAttrEntityId] = (map[addAttrEntityId] || []).filter(a => a.id !== selectedAttrId);
+                    return map;
+                  });
+                  setSelectedAttrId(null);
+                  setShowDeleteAttrConfirm(false);
+                }}
+              >Yes</button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,0 +1,11 @@
+import { postData } from './apiClient';
+
+const BASE_ENDPOINT = '/sql-generator';
+
+export const execute = async (
+  id: string, 
+  encodedCredential?: string
+): Promise<any> => {
+    const url = `${BASE_ENDPOINT}/execute/${id}`;
+    return await postData(url, {}, encodedCredential);
+};
