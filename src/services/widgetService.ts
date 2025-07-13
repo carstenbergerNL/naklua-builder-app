@@ -4,14 +4,29 @@ import { toCreateDto, toUpdateDto } from './dtoMappers';
 
 const BASE_ENDPOINT = '/Widgets';
 
+/**
+ * Service for managing widgets (CRUD) via the backend API.
+ */
 export const getWidgetsByPageId = async (
   id: string,
   encodedCredential?: string
 ): Promise<WidgetInstance[]> => {
+  /**
+   * Fetch all widgets for a given page ID.
+   * @param id - The page ID
+   * @param encodedCredential - Optional base64-encoded credentials for auth
+   * @returns Promise<WidgetInstance[]>
+   */
   const url = `${BASE_ENDPOINT}/page/${id}`;
   return await getData(url, {}, encodedCredential);
 };
 
+/**
+ * Delete a widget by ID.
+ * @param id - The widget ID
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<void>
+ */
 export const deleteWidget = async (
   id: string,
   encodedCredential?: string
@@ -21,6 +36,11 @@ export const deleteWidget = async (
   await deleteData(url, encodedCredential);
 };
 
+/**
+ * Save (create or update) a widget instance.
+ * @param widget - The widget instance to save
+ * @returns Promise<void>
+ */
 export const saveWidget = async (widget: WidgetInstance): Promise<void> => {
   const dto = {
     parentId: null, // or widget.parentId if you have it
@@ -45,8 +65,11 @@ export const saveWidget = async (widget: WidgetInstance): Promise<void> => {
   }
 };
 
-
-
+/**
+ * Check if a widget exists by ID.
+ * @param id - The widget ID
+ * @returns Promise<boolean>
+ */
 const widgetExists = async (id: string): Promise<boolean> => {
   try {
     await getData(`${BASE_ENDPOINT}/${id}`);

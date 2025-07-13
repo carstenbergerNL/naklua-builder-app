@@ -17,10 +17,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { DndContext, closestCenter, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import WidgetRenderer from "../components/WidgetRenderer";
+import { getDomainModelsByApp } from "../services/domainModelService";
+import { DomainModel } from "../models/DomainModel";
 
 export default function BuilderPage() {
   const [pages, setPages] = useState<Page[]>([]);
+  const [domainModels, setDomainModels] = useState<DomainModel[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [selectedDomainModelId, setSelectedDomainModelId] = useState<string | null>(null);
   const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
@@ -34,6 +38,7 @@ export default function BuilderPage() {
 
   useEffect(() => {
     getPages(appInstanceId).then(setPages);
+    getDomainModelsByApp(appInstanceId).then(setDomainModels);
     getWidgetDefinitions().then(setAvailableWidgets);
   }, []);
 
@@ -47,10 +52,19 @@ export default function BuilderPage() {
 
   const handleSelectPage = async (id: string) => {
     setSelectedPageId(id);
+    setSelectedDomainModelId(null);
     const data = await getWidgetsByPageId(id);
     setWidgets(data);
     setSelectedWidgetId(null);
     setActivePropertiesTab(0); // Switch to Properties tab
+  };
+
+  const handleSelectDomainModel = (id: string) => {
+    setSelectedDomainModelId(id);
+    setSelectedPageId(null);
+    setWidgets([]);
+    setSelectedWidgetId(null);
+    setActivePropertiesTab(0);
   };
 
   const addWidget = async (type: string, parentId?: string | null, orderIndex?: number) => {
@@ -236,8 +250,10 @@ export default function BuilderPage() {
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <Sidebar
           pages={pages}
+          domainModels={domainModels}
           selectedPageId={selectedPageId}
           onSelectPage={handleSelectPage}
+          onSelectDomainModel={handleSelectDomainModel}
           onAddWidget={addWidget}
         />
         <DndContext
@@ -249,44 +265,52 @@ export default function BuilderPage() {
         >
           <div style={{ flex: 1, display: "flex", minWidth: 0 }}>
             {/* Main content column */}
-            <div
-              style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
-              onClick={e => {
-                if (e.target === e.currentTarget) {
-                  setSelectedWidgetId(null);
-                  setActivePropertiesTab(0);
-                }
-              }}
-            >
-              <div className="info-bar">Editing page: <b>{currentPage ? currentPage.name : "(no page selected)"}</b></div>
-              <WidgetCanvas
-                widgets={widgets}
-                selectedWidgetId={selectedWidgetId}
-                onSelectWidget={id => {
-                  setSelectedWidgetId(id);
-                  setActivePropertiesTab(0);
-                }}
-                onDeleteWidget={handleDeleteWidget}
-                onReorder={handleReorderWidgets}
-                pageName={currentPage ? currentPage.name : ""}
-                onAddWidget={addWidget}
-                activeDragFromToolbox={activeDragFromToolbox}
+            {selectedDomainModelId ? (
+              <DomainModelDetails
+                domainModel={domainModels.find(dm => dm.id === selectedDomainModelId) || null}
               />
-            </div>
-            <WidgetEditor
-              widget={selectedWidget || null}
-              onChange={updateConfig}
-              onSave={saveCurrentWidget}
-              saving={saving}
-              onAddWidget={addWidget}
-              availableWidgets={availableWidgets}
-              pages={pages}
-              onSelectPage={handleSelectPage}
-              selectedPageId={selectedPageId}
-              selectedPage={currentPage}
-              activeIndex={activePropertiesTab}
-              setActiveIndex={setActivePropertiesTab}
-            />
+            ) : (
+              <>
+                <div
+                  style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
+                  onClick={e => {
+                    if (e.target === e.currentTarget) {
+                      setSelectedWidgetId(null);
+                      setActivePropertiesTab(0);
+                    }
+                  }}
+                >
+                  <div className="info-bar">Editing page: <b>{currentPage ? currentPage.name : "(no page selected)"}</b></div>
+                  <WidgetCanvas
+                    widgets={widgets}
+                    selectedWidgetId={selectedWidgetId}
+                    onSelectWidget={id => {
+                      setSelectedWidgetId(id);
+                      setActivePropertiesTab(0);
+                    }}
+                    onDeleteWidget={handleDeleteWidget}
+                    onReorder={handleReorderWidgets}
+                    pageName={currentPage ? currentPage.name : ""}
+                    onAddWidget={addWidget}
+                    activeDragFromToolbox={activeDragFromToolbox}
+                  />
+                </div>
+                <WidgetEditor
+                  widget={selectedWidget || null}
+                  onChange={updateConfig}
+                  onSave={saveCurrentWidget}
+                  saving={saving}
+                  onAddWidget={addWidget}
+                  availableWidgets={availableWidgets}
+                  pages={pages}
+                  onSelectPage={handleSelectPage}
+                  selectedPageId={selectedPageId}
+                  selectedPage={currentPage}
+                  activeIndex={activePropertiesTab}
+                  setActiveIndex={setActivePropertiesTab}
+                />
+              </>
+            )}
           </div>
           <DragOverlay key={activeDragWidgetType}>
             {activeDragWidgetType && !activeDragFromToolbox ? (
@@ -294,6 +318,29 @@ export default function BuilderPage() {
             ) : null}
           </DragOverlay>
         </DndContext>
+      </div>
+    </div>
+  );
+}
+
+// DomainModelDetails component
+function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }) {
+  if (!domainModel) return <div style={{ padding: 32, color: '#888' }}>No Domain Model selected</div>;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%' }}>
+      <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+        <div className="info-bar" style={{ marginBottom: 0 }}>
+          Domain Model: <b>{domainModel.name}</b>
+        </div>
+        <div style={{ flex: 1 }} />
+      </div>
+      <div className="app-widget-editor" style={{ minWidth: 320, maxWidth: 400, width: 400 }}>
+        <div style={{ fontWeight: 600, marginBottom: 16 }}>Domain Model Details</div>
+        <div><b>Name:</b> {domainModel.name}</div>
+        <div><b>Description:</b> {domainModel.description}</div>
+        <div><b>Created At:</b> {new Date(domainModel.createdAt).toLocaleString()}</div>
+        <div><b>Creator ID:</b> {domainModel.creatorId}</div>
+        <div style={{ marginTop: 24, color: '#888' }}><i>Extend this view to show entities, attributes, etc.</i></div>
       </div>
     </div>
   );

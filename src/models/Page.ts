@@ -1,3 +1,7 @@
+/**
+ * Page represents a single page in the builder application.
+ * Includes metadata, layout, and configuration fields.
+ */
 export interface Page {
     id: string;
     appInstanceId: string;
@@ -18,6 +22,7 @@ export interface Page {
     isHomePage: boolean;
     isPublished: boolean;
     orderIndex: number;
+    parentId?: string | null;
     creatorId?: string;
     createdAt: string;
     updaterId?: string;

@@ -21,10 +21,20 @@ apiClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+/**
+ * Helper to add Authorization header if credentials are provided.
+ */
 const withAuthHeader = (encodedCredential?: string) => {
     return encodedCredential ? { Authorization: `Basic ${encodedCredential}` } : {};
 };
 
+/**
+ * Perform a GET request.
+ * @param endpoint - API endpoint
+ * @param params - Query parameters
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const getData = async (endpoint: string, params = {}, encodedCredential?: string) => {
     try {
         const response = await apiClient.get(endpoint, {
@@ -38,6 +48,13 @@ export const getData = async (endpoint: string, params = {}, encodedCredential?:
     }
 };
 
+/**
+ * Perform a POST request.
+ * @param endpoint - API endpoint
+ * @param data - Request body
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const postData = async (endpoint: string, data: any, encodedCredential?: string) => {
     try {
         const response = await apiClient.post(endpoint, data, {
@@ -50,6 +67,13 @@ export const postData = async (endpoint: string, data: any, encodedCredential?: 
     }
 };
 
+/**
+ * Perform a PUT request.
+ * @param endpoint - API endpoint
+ * @param data - Request body
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const putData = async (endpoint: string, data: any, encodedCredential?: string) => {
     try {
         const response = await apiClient.put(endpoint, data, {
@@ -62,6 +86,12 @@ export const putData = async (endpoint: string, data: any, encodedCredential?: s
     }
 };
 
+/**
+ * Perform a DELETE request.
+ * @param endpoint - API endpoint
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const deleteData = async (endpoint: string, encodedCredential?: string) => {
     try {
         const response = await apiClient.delete(endpoint, {
@@ -74,6 +104,13 @@ export const deleteData = async (endpoint: string, encodedCredential?: string) =
     }
 };
 
+/**
+ * Perform a PATCH request.
+ * @param endpoint - API endpoint
+ * @param data - Request body
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const patchData = async (endpoint: string, data: any, encodedCredential?: string) => {
     try {
         const response = await apiClient.patch(endpoint, data, {
@@ -86,6 +123,13 @@ export const patchData = async (endpoint: string, data: any, encodedCredential?:
     }
 };
 
+/**
+ * Perform a HEAD request.
+ * @param endpoint - API endpoint
+ * @param params - Query parameters
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const headData = async (endpoint: string, params = {}, encodedCredential?: string) => {
     try {
         const response = await apiClient.head(endpoint, {
@@ -99,6 +143,13 @@ export const headData = async (endpoint: string, params = {}, encodedCredential?
     }
 };
 
+/**
+ * Perform an OPTIONS request.
+ * @param endpoint - API endpoint
+ * @param params - Query parameters
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const optionsData = async (endpoint: string, params = {}, encodedCredential?: string) => {
     try {
         const response = await apiClient.options(endpoint, {
@@ -112,6 +163,13 @@ export const optionsData = async (endpoint: string, params = {}, encodedCredenti
     }
 };
 
+/**
+ * Perform a TRACE request.
+ * @param endpoint - API endpoint
+ * @param params - Query parameters
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const traceRequest = async (endpoint: string, params = {}, encodedCredential?: string) => {
     try {
         const response = await apiClient.request({
@@ -127,6 +185,13 @@ export const traceRequest = async (endpoint: string, params = {}, encodedCredent
     }
 };
 
+/**
+ * Perform a CONNECT request.
+ * @param endpoint - API endpoint
+ * @param params - Query parameters
+ * @param encodedCredential - Optional base64-encoded credentials for auth
+ * @returns Promise<any>
+ */
 export const connectRequest = async (endpoint: string, params = {}, encodedCredential?: string) => {
     try {
         const response = await apiClient.request({
@@ -142,6 +207,11 @@ export const connectRequest = async (endpoint: string, params = {}, encodedCrede
     }
 };
 
+/**
+ * Fetch local JSON data (for static assets or mocks).
+ * @param jsonPath - Path to the local JSON file
+ * @returns Promise<any>
+ */
 export const getLocalJsonData = async (jsonPath: string) => {
     const response = await fetch(jsonPath);
     if (!response.ok) {
