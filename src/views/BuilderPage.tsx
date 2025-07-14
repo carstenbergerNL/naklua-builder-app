@@ -434,7 +434,6 @@ function DomainModelDetails({ domainModel }: { domainModel: DomainModel | null }
           Domain Model: <b>{domainModel.name}</b>
         </div>
         <div style={{ flex: 1, padding: '2rem 2.5rem', overflow: 'auto' }} onClick={e => { if (e.target === e.currentTarget) setSelectedAttribute(null); }}>
-          <h2 style={{ marginBottom: 16 }}>Entities</h2>
           {loading ? (
             <div style={{ color: '#888' }}>Loading entities...</div>
           ) : entities.length === 0 ? (
